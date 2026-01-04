@@ -1,0 +1,663 @@
+#!/usr/bin/env python3
+"""
+Individual check functions for document format checking.
+"""
+
+from pathlib import Path
+from config_loader import ConfigLoader
+from cover import check_cover_font
+from toc import check_toc_order, check_toc_all, check_toc_complete
+from header_footer import (
+    analyze_header_footer_usage,
+    extract_headers_from_docx,
+    extract_footers_from_docx,
+    check_header_consistency,
+    check_footer_consistency,
+)
+from empty_lines import check_consecutive_empty_lines
+from figure import check_figure_empty_lines, check_caption_alignment
+
+
+def run_cover_check(docx_path):
+    """Run cover page check."""
+    print("Checking cover font...")
+    try:
+        config_loader = ConfigLoader()
+        config = config_loader.load()
+        cover_config = config.get("cover", {})
+        if cover_config.get("enabled", True):
+            format_config = cover_config.get("format", {})
+            required_font = format_config.get("font", "黑体")
+            cover_check = check_cover_font(docx_path, required_font=required_font)
+            print(f"   Result: {cover_check['message']}")
+
+            if cover_check["found"]:
+                print()
+                print("   WARNING: Cover font is incorrect!")
+                if cover_check["details"]:
+                    details = cover_check["details"]
+                    print(f"   Found {len(details)} paragraph(s) with incorrect font")
+                    if len(details) > 20:
+                        print("   First 10 locations:")
+                        for detail in details[:10]:
+                            fonts_str = ", ".join(detail["fonts"])
+                            print(
+                                f"      - Paragraph {detail['paragraph']} (Page ~{detail['page']}): Fonts: {fonts_str}, Required: {detail['required_font']}"
+                            )
+                        print("   ...")
+                    else:
+                        print("   Locations:")
+                        for detail in details:
+                            fonts_str = ", ".join(detail["fonts"])
+                            print(
+                                f"      - Paragraph {detail['paragraph']} (Page ~{detail['page']}): Fonts: {fonts_str}, Required: {detail['required_font']}"
+                            )
+            else:
+                print("   ✓ Cover font is correct")
+            return cover_check
+        else:
+            cover_check = {
+                "found": False,
+                "message": "Cover check is disabled",
+                "details": [],
+            }
+            print(f"   Result: {cover_check['message']}")
+            return cover_check
+    except Exception as e:
+        print(f"   Error loading cover config: {e}")
+        return {"found": False, "message": f"Error: {e}", "details": []}
+
+
+def run_toc_check(docx_path):
+    """Run table of contents check with parallel execution."""
+    print("Checking table of contents (order, format, numbering, page accuracy)...")
+    try:
+        config_loader = ConfigLoader()
+        config = config_loader.load()
+        toc_config = config.get("table_of_contents", {})
+
+        if toc_config.get("enabled", True):
+            # All TOC checks run in parallel: order, format, numbering, page accuracy
+            toc_results = check_toc_complete(docx_path, toc_config)
+
+            toc_order_check = toc_results.get("order", {})
+            print(f"   Order: {toc_order_check.get('message', 'N/A')}")
+
+            if toc_order_check.get("found"):
+                print("   WARNING: TOC sections are not in correct order!")
+                if toc_order_check.get("details"):
+                    for detail in toc_order_check["details"]:
+                        print(f"      - {detail}")
+            else:
+                print("   ✓ TOC sections are in correct order")
+
+            print()
+            toc_format_check = toc_results.get("format", {})
+            print(f"   Format: {toc_format_check.get('message', 'N/A')}")
+
+            if toc_format_check.get("found"):
+                print("   WARNING: Table of contents format issues found!")
+                if toc_format_check.get("details"):
+                    details = toc_format_check["details"]
+                    print(f"   Found {len(details)} paragraph(s) with format issues")
+                    if len(details) > 10:
+                        print("   First 5 locations:")
+                        for detail in details[:5]:
+                            issues_str = "; ".join(detail["issues"])
+                            print(
+                                f"      - Paragraph {detail['paragraph']} (Page ~{detail['page']}, Style {detail['style']}): {issues_str}"
+                            )
+                    else:
+                        for detail in details:
+                            issues_str = "; ".join(detail["issues"])
+                            print(
+                                f"      - Paragraph {detail['paragraph']} (Page ~{detail['page']}, Style {detail['style']}): {issues_str}"
+                            )
+
+            toc_numbering_check = toc_results.get("numbering", {})
+            print(
+                f"   Numbering continuity: {toc_numbering_check.get('message', 'N/A')}"
+            )
+
+            if toc_numbering_check.get("found"):
+                print("   WARNING: Numbering continuity issues found!")
+                if toc_numbering_check.get("details"):
+                    details = toc_numbering_check["details"]
+                    print(f"   Found {len(details)} numbering issue(s)")
+                    if len(details) > 10:
+                        print("   First 5 locations:")
+                        for detail in details[:5]:
+                            print(
+                                f"      - Paragraph {detail['paragraph']} (Page ~{detail['page']}): {detail['numbering']} - {detail['issue']}"
+                            )
+                    else:
+                        for detail in details:
+                            print(
+                                f"      - Paragraph {detail['paragraph']} (Page ~{detail['page']}): {detail['numbering']} - {detail['issue']}"
+                            )
+
+            toc_page_check = toc_results.get("page_accuracy", {})
+            print(f"   Page accuracy: {toc_page_check.get('message', 'N/A')}")
+
+            if toc_page_check.get("found"):
+                print("   WARNING: Page number accuracy issues found!")
+                if toc_page_check.get("details"):
+                    details = toc_page_check["details"]
+                    print(f"   Found {len(details)} page number issue(s)")
+                    if len(details) > 10:
+                        print("   First 5 locations:")
+                        for detail in details[:5]:
+                            print(
+                                f"      - Paragraph {detail['paragraph']}: {detail['issue']}"
+                            )
+                    else:
+                        for detail in details:
+                            print(
+                                f"      - Paragraph {detail['paragraph']}: {detail['issue']}"
+                            )
+        else:
+            print("   Table of contents check is disabled")
+            toc_results = {
+                "order": {"found": False, "message": "Disabled", "details": []},
+                "format": {"found": False, "message": "Disabled", "details": []},
+                "numbering": {"found": False, "message": "Disabled", "details": []},
+                "page_accuracy": {"found": False, "message": "Disabled", "details": []},
+            }
+    except Exception as e:
+        print(f"   Error checking table of contents: {e}")
+        toc_results = {
+            "order": {"found": False, "message": f"Error: {e}", "details": []},
+            "format": {"found": False, "message": f"Error: {e}", "details": []},
+            "numbering": {"found": False, "message": f"Error: {e}", "details": []},
+            "page_accuracy": {"found": False, "message": f"Error: {e}", "details": []},
+        }
+
+    return toc_results
+
+
+def run_figure_list_check(docx_path):
+    """Run figure list check."""
+    print("Checking figure list (format, numbering, page accuracy)...")
+    try:
+        config_loader = ConfigLoader()
+        config = config_loader.load()
+        figure_list_config = config.get("figure_list", {})
+
+        if figure_list_config.get("enabled", True):
+            figure_list_results = check_toc_all(
+                docx_path, "figure_list", figure_list_config
+            )
+
+            figure_list_format_check = figure_list_results.get("format", {})
+            print(f"   Format: {figure_list_format_check.get('message', 'N/A')}")
+
+            if figure_list_format_check.get("found"):
+                print("   WARNING: Figure list format issues found!")
+                if figure_list_format_check.get("details"):
+                    details = figure_list_format_check["details"]
+                    print(f"   Found {len(details)} paragraph(s) with format issues")
+                    if len(details) > 10:
+                        print("   First 5 locations:")
+                        for detail in details[:5]:
+                            issues_str = "; ".join(detail["issues"])
+                            print(
+                                f"      - Paragraph {detail['paragraph']} (Page ~{detail['page']}, Style {detail['style']}): {issues_str}"
+                            )
+                    else:
+                        for detail in details:
+                            issues_str = "; ".join(detail["issues"])
+                            print(
+                                f"      - Paragraph {detail['paragraph']} (Page ~{detail['page']}, Style {detail['style']}): {issues_str}"
+                            )
+
+            figure_list_numbering_check = figure_list_results.get("numbering", {})
+            print(
+                f"   Numbering continuity: {figure_list_numbering_check.get('message', 'N/A')}"
+            )
+
+            if figure_list_numbering_check.get("found"):
+                print("   WARNING: Numbering continuity issues found!")
+                if figure_list_numbering_check.get("details"):
+                    details = figure_list_numbering_check["details"]
+                    print(f"   Found {len(details)} numbering issue(s)")
+                    if len(details) > 10:
+                        print("   First 5 locations:")
+                        for detail in details[:5]:
+                            print(
+                                f"      - Paragraph {detail['paragraph']} (Page ~{detail['page']}): {detail['numbering']} - {detail['issue']}"
+                            )
+                    else:
+                        for detail in details:
+                            print(
+                                f"      - Paragraph {detail['paragraph']} (Page ~{detail['page']}): {detail['numbering']} - {detail['issue']}"
+                            )
+
+            figure_list_page_check = figure_list_results.get("page_accuracy", {})
+            print(f"   Page accuracy: {figure_list_page_check.get('message', 'N/A')}")
+
+            if figure_list_page_check.get("found"):
+                print("   WARNING: Page number accuracy issues found!")
+                if figure_list_page_check.get("details"):
+                    details = figure_list_page_check["details"]
+                    print(f"   Found {len(details)} page number issue(s)")
+                    if len(details) > 10:
+                        print("   First 5 locations:")
+                        for detail in details[:5]:
+                            print(
+                                f"      - Paragraph {detail['paragraph']}: {detail['issue']}"
+                            )
+                    else:
+                        for detail in details:
+                            print(
+                                f"      - Paragraph {detail['paragraph']}: {detail['issue']}"
+                            )
+        else:
+            print("   Figure list check is disabled")
+            figure_list_results = {
+                "format": {"found": False, "message": "Disabled", "details": []},
+                "numbering": {"found": False, "message": "Disabled", "details": []},
+                "page_accuracy": {"found": False, "message": "Disabled", "details": []},
+            }
+    except Exception as e:
+        print(f"   Error checking figure list: {e}")
+        figure_list_results = {
+            "format": {"found": False, "message": f"Error: {e}", "details": []},
+            "numbering": {"found": False, "message": f"Error: {e}", "details": []},
+            "page_accuracy": {"found": False, "message": f"Error: {e}", "details": []},
+        }
+
+    return figure_list_results
+
+
+def run_table_list_check(docx_path):
+    """Run table list check."""
+    print("Checking table list (format, numbering, page accuracy)...")
+    try:
+        config_loader = ConfigLoader()
+        config = config_loader.load()
+        table_list_config = config.get("table_list", {})
+
+        if table_list_config.get("enabled", True):
+            table_list_results = check_toc_all(
+                docx_path, "table_list", table_list_config
+            )
+
+            table_list_format_check = table_list_results.get("format", {})
+            print(f"   Format: {table_list_format_check.get('message', 'N/A')}")
+
+            if table_list_format_check.get("found"):
+                print("   WARNING: Table list format issues found!")
+                if table_list_format_check.get("details"):
+                    details = table_list_format_check["details"]
+                    print(f"   Found {len(details)} paragraph(s) with format issues")
+                    if len(details) > 10:
+                        print("   First 5 locations:")
+                        for detail in details[:5]:
+                            issues_str = "; ".join(detail["issues"])
+                            print(
+                                f"      - Paragraph {detail['paragraph']} (Page ~{detail['page']}, Style {detail['style']}): {issues_str}"
+                            )
+                    else:
+                        for detail in details:
+                            issues_str = "; ".join(detail["issues"])
+                            print(
+                                f"      - Paragraph {detail['paragraph']} (Page ~{detail['page']}, Style {detail['style']}): {issues_str}"
+                            )
+
+            table_list_numbering_check = table_list_results.get("numbering", {})
+            print(
+                f"   Numbering continuity: {table_list_numbering_check.get('message', 'N/A')}"
+            )
+
+            if table_list_numbering_check.get("found"):
+                print("   WARNING: Numbering continuity issues found!")
+                if table_list_numbering_check.get("details"):
+                    details = table_list_numbering_check["details"]
+                    print(f"   Found {len(details)} numbering issue(s)")
+                    if len(details) > 10:
+                        print("   First 5 locations:")
+                        for detail in details[:5]:
+                            print(
+                                f"      - Paragraph {detail['paragraph']} (Page ~{detail['page']}): {detail['numbering']} - {detail['issue']}"
+                            )
+                    else:
+                        for detail in details:
+                            print(
+                                f"      - Paragraph {detail['paragraph']} (Page ~{detail['page']}): {detail['numbering']} - {detail['issue']}"
+                            )
+
+            table_list_page_check = table_list_results.get("page_accuracy", {})
+            print(f"   Page accuracy: {table_list_page_check.get('message', 'N/A')}")
+
+            if table_list_page_check.get("found"):
+                print("   WARNING: Page number accuracy issues found!")
+                if table_list_page_check.get("details"):
+                    details = table_list_page_check["details"]
+                    print(f"   Found {len(details)} page number issue(s)")
+                    if len(details) > 10:
+                        print("   First 5 locations:")
+                        for detail in details[:5]:
+                            print(
+                                f"      - Paragraph {detail['paragraph']}: {detail['issue']}"
+                            )
+                    else:
+                        for detail in details:
+                            print(
+                                f"      - Paragraph {detail['paragraph']}: {detail['issue']}"
+                            )
+        else:
+            print("   Table list check is disabled")
+            table_list_results = {
+                "format": {"found": False, "message": "Disabled", "details": []},
+                "numbering": {"found": False, "message": "Disabled", "details": []},
+                "page_accuracy": {"found": False, "message": "Disabled", "details": []},
+            }
+    except Exception as e:
+        print(f"   Error checking table list: {e}")
+        table_list_results = {
+            "format": {"found": False, "message": f"Error: {e}", "details": []},
+            "numbering": {"found": False, "message": f"Error: {e}", "details": []},
+            "page_accuracy": {"found": False, "message": f"Error: {e}", "details": []},
+        }
+
+    return table_list_results
+
+
+def run_headers_check(docx_path):
+    """Run headers check."""
+    print("Analyzing header/footer usage...")
+    usage_info = analyze_header_footer_usage(docx_path)
+    print()
+
+    print("Extracting headers...")
+    headers = extract_headers_from_docx(docx_path, usage_info)
+    print(f"   Extracted {len(headers)} header(s) with content")
+    print()
+
+    if headers:
+        print("   Header details:")
+        for i, header in enumerate(headers, 1):
+            print(f"   Header {i} ({header['file']}):")
+            print(
+                f"      Content: {header['text'][:100]}..."
+                if len(header["text"]) > 100
+                else f"      Content: {header['text']}"
+            )
+            if header.get("page_info"):
+                page_ranges = []
+                for info in header["page_info"]:
+                    page_ranges.append(
+                        f"Page ~{info['estimated_start_page']} (Section {info['section']}, Para {info['start_para']})"
+                    )
+                if page_ranges:
+                    print(f"      Location: {', '.join(page_ranges)}")
+            print()
+
+    print("Checking header consistency...")
+    consistency = check_header_consistency(headers)
+    print(f"   Result: {consistency['message']}")
+
+    if not consistency["consistent"]:
+        print()
+        print("   WARNING: Headers are not consistent!")
+        if "variations" in consistency:
+            print("   Header variations found:")
+            for header_text, count in consistency["variations"].items():
+                print(
+                    f"      - '{header_text[:80]}...' (appears {count} time(s))"
+                    if len(header_text) > 80
+                    else f"      - '{header_text}' (appears {count} time(s))"
+                )
+    else:
+        print("   ✓ Headers are consistent")
+
+    return {"headers": headers, "consistency": consistency, "usage_info": usage_info}
+
+
+def run_footers_check(docx_path, usage_info=None):
+    """Run footers check."""
+    if usage_info is None:
+        print("Analyzing header/footer usage...")
+        usage_info = analyze_header_footer_usage(docx_path)
+        print()
+
+    print("Extracting footers...")
+    footers = extract_footers_from_docx(docx_path, usage_info)
+    print(f"   Extracted {len(footers)} footer(s) with content")
+    print()
+
+    if footers:
+        print("   Footer details:")
+        for i, footer in enumerate(footers, 1):
+            print(f"   Footer {i} ({footer['file']}):")
+            print(
+                f"      Content: {footer['text'][:100]}..."
+                if len(footer["text"]) > 100
+                else f"      Content: {footer['text']}"
+            )
+            if footer.get("page_info"):
+                page_ranges = []
+                for info in footer["page_info"]:
+                    page_ranges.append(
+                        f"Page ~{info['estimated_start_page']} (Section {info['section']}, Para {info['start_para']})"
+                    )
+                if page_ranges:
+                    print(f"      Location: {', '.join(page_ranges)}")
+            print()
+
+    print("Checking footer consistency...")
+    footer_consistency = check_footer_consistency(footers)
+    print(f"   Result: {footer_consistency['message']}")
+
+    if not footer_consistency["consistent"]:
+        print()
+        print("   WARNING: Footers are not consistent!")
+        if "variations" in footer_consistency:
+            print("   Footer variations found:")
+            for footer_text, count in footer_consistency["variations"].items():
+                print(
+                    f"      - '{footer_text[:80]}...' (appears {count} time(s))"
+                    if len(footer_text) > 80
+                    else f"      - '{footer_text}' (appears {count} time(s))"
+                )
+    else:
+        print("   ✓ Footers are consistent")
+
+    return {"footers": footers, "consistency": footer_consistency}
+
+
+def run_empty_lines_check(docx_path):
+    """Run empty lines check."""
+    print("Checking for consecutive empty lines...")
+    try:
+        config_loader = ConfigLoader()
+        config = config_loader.load()
+        empty_lines_config = config.get("empty_lines", {})
+        if empty_lines_config.get("enabled", True):
+            max_consecutive = empty_lines_config.get("max_consecutive", 1)
+            empty_lines_check = check_consecutive_empty_lines(
+                docx_path, max_consecutive=max_consecutive
+            )
+            print(f"   Result: {empty_lines_check['message']}")
+        else:
+            empty_lines_check = {
+                "found": False,
+                "message": "Empty lines check is disabled",
+                "details": [],
+            }
+            print(f"   Result: {empty_lines_check['message']}")
+    except Exception as e:
+        print(f"   Error loading empty lines config: {e}")
+        empty_lines_check = {"found": False, "message": f"Error: {e}", "details": []}
+
+    if empty_lines_check["found"]:
+        print()
+        print("   WARNING: Consecutive empty lines found!")
+        if empty_lines_check["details"]:
+            details = empty_lines_check["details"]
+            print(f"   Found {len(details)} group(s) of consecutive empty lines")
+            if len(details) > 20:
+                print("   First 10 locations:")
+                for detail in details[:10]:
+                    page_info = ""
+                    if (
+                        "estimated_start_page" in detail
+                        and "estimated_end_page" in detail
+                    ):
+                        if (
+                            detail["estimated_start_page"]
+                            == detail["estimated_end_page"]
+                        ):
+                            page_info = f" (Page ~{detail['estimated_start_page']})"
+                        else:
+                            page_info = f" (Pages ~{detail['estimated_start_page']}-{detail['estimated_end_page']})"
+                    print(
+                        f"      - Paragraphs {detail['start']} to {detail['end']}: {detail['count']} consecutive empty lines{page_info}"
+                    )
+                print("   ...")
+            else:
+                print("   Locations:")
+                for detail in details:
+                    page_info = ""
+                    if (
+                        "estimated_start_page" in detail
+                        and "estimated_end_page" in detail
+                    ):
+                        if (
+                            detail["estimated_start_page"]
+                            == detail["estimated_end_page"]
+                        ):
+                            page_info = f" (Page ~{detail['estimated_start_page']})"
+                        else:
+                            page_info = f" (Pages ~{detail['estimated_start_page']}-{detail['estimated_end_page']})"
+                    print(
+                        f"      - Paragraphs {detail['start']} to {detail['end']}: {detail['count']} consecutive empty lines{page_info}"
+                    )
+    else:
+        print("   ✓ No consecutive empty lines found")
+
+    if "total_paragraphs" in empty_lines_check:
+        print(
+            f"   Total paragraphs in document: {empty_lines_check['total_paragraphs']}"
+        )
+
+    return empty_lines_check
+
+
+def run_figures_check(docx_path):
+    """Run figures check."""
+    print("Checking figure empty lines...")
+    figure_check = check_figure_empty_lines(docx_path)
+    print(f"   Result: {figure_check['message']}")
+
+    if figure_check["found"]:
+        print()
+        print("   WARNING: Figures with empty lines before or after found!")
+        if figure_check["details"]:
+            details = figure_check["details"]
+            print(f"   Found {len(details)} figure(s) with empty lines")
+            if len(details) > 20:
+                print("   First 10 locations:")
+                for detail in details[:10]:
+                    before = "Yes" if detail["before_empty"] else "No"
+                    after = "Yes" if detail["after_empty"] else "No"
+                    print(
+                        f"      - Paragraph {detail['paragraph']} (Page ~{detail['page']}): Before={before}, After={after}"
+                    )
+                print("   ...")
+            else:
+                print("   Locations:")
+                for detail in details:
+                    before = "Yes" if detail["before_empty"] else "No"
+                    after = "Yes" if detail["after_empty"] else "No"
+                    print(
+                        f"      - Paragraph {detail['paragraph']} (Page ~{detail['page']}): Before={before}, After={after}"
+                    )
+    else:
+        print("   ✓ No figures with empty lines before or after found")
+
+    return figure_check
+
+
+def run_captions_check(docx_path):
+    """Run captions check."""
+    print("Checking caption alignment...")
+    try:
+        config_loader = ConfigLoader()
+        config = config_loader.load()
+        captions_config = config.get("captions", {})
+        if captions_config.get("enabled", True):
+            figure_config = captions_config.get("figure", {})
+            format_config = figure_config.get("format", {})
+            required_alignment = format_config.get("alignment", "center")
+            caption_check = check_caption_alignment(
+                docx_path, required_alignment=required_alignment
+            )
+            print(f"   Result: {caption_check['message']}")
+        else:
+            caption_check = {
+                "found": False,
+                "message": "Caption check is disabled",
+                "details": [],
+            }
+            print(f"   Result: {caption_check['message']}")
+    except Exception as e:
+        print(f"   Error loading caption config: {e}")
+        caption_check = {"found": False, "message": f"Error: {e}", "details": []}
+
+    if caption_check["found"]:
+        print()
+        required_alignment_text = (
+            caption_check.get("details", [{}])[0].get("required_alignment", "center")
+            if caption_check.get("details")
+            else "center"
+        )
+        alignment_map = {
+            "center": "居中",
+            "left": "左对齐",
+            "right": "右对齐",
+            "justify": "两端对齐",
+        }
+        alignment_display = alignment_map.get(
+            required_alignment_text, required_alignment_text
+        )
+        print(f"   WARNING: Captions not {alignment_display} found!")
+        if caption_check["details"]:
+            details = caption_check["details"]
+            print(f"   Found {len(details)} caption(s) not {alignment_display}")
+            if len(details) > 20:
+                print("   First 10 locations:")
+                for detail in details[:10]:
+                    alignment_map = {
+                        "left": "Left",
+                        "right": "Right",
+                        "justify": "Justify",
+                        "center": "Center",
+                    }
+                    alignment_text = alignment_map.get(
+                        detail["alignment"], detail["alignment"]
+                    )
+                    print(
+                        f"      - Paragraph {detail['paragraph']} (Page ~{detail['page']}): {detail['type']} - {alignment_text}"
+                    )
+                print("   ...")
+            else:
+                print("   Locations:")
+                for detail in details:
+                    alignment_map = {
+                        "left": "Left",
+                        "right": "Right",
+                        "justify": "Justify",
+                        "center": "Center",
+                    }
+                    alignment_text = alignment_map.get(
+                        detail["alignment"], detail["alignment"]
+                    )
+                    print(
+                        f"      - Paragraph {detail['paragraph']} (Page ~{detail['page']}): {detail['type']} - {alignment_text}"
+                    )
+    else:
+        print("   ✓ All captions are centered")
+
+    return caption_check
+
