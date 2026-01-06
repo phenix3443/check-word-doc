@@ -134,13 +134,14 @@ def generate_markdown_report(docx_path, structure, headers, footers, header_cons
         md_content.append(f"**结果**: {figure_check['message']}\n")
         if figure_check['details']:
             md_content.append("\n**图表前后空行位置**:\n")
-            md_content.append("| 序号 | 段落 | 页码 | 前有空行 | 后有空行 |")
-            md_content.append("|------|------|------|----------|----------|")
+            md_content.append("| 序号 | 图片索引 | 页码 | 前有空行 | 后有空行 |")
+            md_content.append("|------|----------|------|----------|----------|")
 
             for idx, detail in enumerate(figure_check['details'], 1):
                 before_status = "是" if detail['before_empty'] else "否"
                 after_status = "是" if detail['after_empty'] else "否"
-                md_content.append(f"| {idx} | {detail['paragraph']} | 第 {detail['page']} 页 | {before_status} | {after_status} |")
+                figure_idx = detail.get('figure_index', detail.get('paragraph', idx))  # 兼容旧格式
+                md_content.append(f"| {idx} | 图片 {figure_idx} | 第 {detail['page']} 页 | {before_status} | {after_status} |")
     else:
         md_content.append("✅ **状态**: 通过\n")
         md_content.append(f"**结果**: {figure_check['message']}\n")

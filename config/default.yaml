@@ -266,6 +266,8 @@ references:
   validation:
     check_citation_match: true # 检查引用是否在参考文献列表中存在
     error_message: "正文中的引用在参考文献列表中不存在"
+    check_heading_level: true # 检查"参考文献"是否在一级标题下
+    heading_level_error_message: "'参考文献'应设置为一级标题（标题1/Heading 1）"
 
 # ============================================================================
 # 附件检查配置

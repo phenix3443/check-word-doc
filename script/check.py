@@ -18,8 +18,11 @@ from check_functions import (
     run_empty_lines_check,
     run_figures_check,
     run_captions_check,
+    run_references_check,
 )
 from report import generate_markdown_report
+from config_loader import ConfigLoader
+import os
 
 
 def parse_arguments():
@@ -66,6 +69,7 @@ Examples:
             "empty_lines",
             "figures",
             "captions",
+            "references",
         ],
         help="Specific check item to run (can be specified multiple times)",
     )
@@ -80,6 +84,12 @@ Examples:
         "--no-report",
         action="store_true",
         help="Skip generating markdown report",
+    )
+
+    parser.add_argument(
+        "--config",
+        type=str,
+        help="Path to custom configuration file (YAML format)",
     )
 
     return parser.parse_args()
@@ -98,6 +108,7 @@ def list_available_checks():
         "empty_lines": "Check consecutive empty lines",
         "figures": "Check figure empty lines",
         "captions": "Check caption alignment",
+        "references": "Check references format and citations",
     }
 
     print("Available check items:")
@@ -120,6 +131,17 @@ def main():
         print("Use --help for more information")
         sys.exit(1)
 
+    # Set custom config path if provided
+    if args.config:
+        config_path = Path(args.config)
+        if not config_path.exists():
+            print(f"Error: Configuration file not found: {config_path}")
+            sys.exit(1)
+        # Set environment variable for config path
+        os.environ['CUSTOM_CONFIG_PATH'] = str(config_path.absolute())
+        print(f"Using custom configuration: {config_path}")
+        print()
+
     docx_path = Path(args.docx_path)
 
     if not docx_path.exists():
@@ -138,6 +160,7 @@ def main():
             "empty_lines",
             "figures",
             "captions",
+            "references",
         ]
 
     print("=" * 80)
@@ -215,6 +238,12 @@ def main():
         step += 1
         print()
 
+    if "references" in checks_to_run:
+        print(f"{step}. ", end="")
+        results["references"] = run_references_check(docx_path)
+        step += 1
+        print()
+
     print("=" * 80)
     print("SUMMARY")
     print("=" * 80)
@@ -261,6 +290,8 @@ def main():
             print(f"Figure empty lines: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}")
         elif check_name == "captions":
             print(f"Caption alignment: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}")
+        elif check_name == "references":
+            print(f"References check: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}")
 
     issues = []
     for check_name in checks_to_run:
@@ -317,6 +348,8 @@ def main():
             issues.append(f"Figure empty lines: {check_result.get('message', 'N/A')}")
         elif check_name == "captions" and check_result.get("found"):
             issues.append(f"Caption alignment: {check_result.get('message', 'N/A')}")
+        elif check_name == "references" and check_result.get("found"):
+            issues.append(f"References: {check_result.get('message', 'N/A')}")
 
     if issues:
         print()

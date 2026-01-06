@@ -6,6 +6,7 @@ Empty lines checking functions.
 import zipfile
 import xml.etree.ElementTree as ET
 from utils import estimate_page_from_paragraph
+from cover import find_first_page_end
 
 
 def check_consecutive_empty_lines(docx_path, max_consecutive=None):
@@ -58,6 +59,8 @@ def check_consecutive_empty_lines(docx_path, max_consecutive=None):
 
             paragraphs = body.findall(".//w:p", namespaces)
 
+            first_page_end = find_first_page_end(paragraphs, namespaces, body)
+
             def is_in_table_cell(para):
                 """Check if paragraph is inside a table cell."""
                 path_parts = []
@@ -102,6 +105,14 @@ def check_consecutive_empty_lines(docx_path, max_consecutive=None):
             start_paragraph = None
 
             for para_idx, para in enumerate(paragraphs, 1):
+                para_idx_0based = para_idx - 1
+
+                if para_idx_0based <= first_page_end:
+                    if empty_count > max_consecutive:
+                        empty_count = 0
+                        start_paragraph = None
+                    continue
+
                 if is_in_table_cell(para):
                     if empty_count > max_consecutive:
                         empty_count = 0

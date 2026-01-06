@@ -68,11 +68,14 @@ def check_figure_empty_lines(docx_path):
                         break
                 return False
 
+            figure_index = 0  # 图片索引计数器
+            
             for para_idx, para in enumerate(paragraphs, 1):
                 if is_in_table_cell(para):
                     continue
 
                 if has_figure(para):
+                    figure_index += 1  # 每发现一个图片，索引递增
                     total_paras = len(paragraphs)
                     page = estimate_page_from_paragraph(para_idx, total_paras)
 
@@ -95,6 +98,7 @@ def check_figure_empty_lines(docx_path):
 
                     if before_empty or after_empty:
                         figure_issues.append({
+                            'figure_index': figure_index,  # 使用图片索引而不是段落号
                             'paragraph': para_idx,
                             'page': page,
                             'before_empty': before_empty,

@@ -37,6 +37,87 @@ def extract_text_from_docx(docx_path):
         return None
 
 
+def extract_references_from_xml(docx_path):
+    """Extract references from XML, handling Word auto-numbering."""
+    try:
+        with zipfile.ZipFile(docx_path, "r") as docx:
+            document_xml = docx.read("word/document.xml")
+            root = ET.fromstring(document_xml)
+
+            namespaces = {
+                "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            }
+
+            paragraphs = root.findall(".//w:p", namespaces)
+
+            # Find references section
+            ref_start_idx = None
+            for i, para in enumerate(paragraphs):
+                text_elements = para.findall(".//w:t", namespaces)
+                para_text = "".join([t.text for t in text_elements if t.text])
+                if para_text.strip() == "参考文献":
+                    ref_start_idx = i
+                    break
+
+            if ref_start_idx is None:
+                return []
+
+            # Find the numbering ID used for references
+            # Check paragraphs after "参考文献" to find the numbering pattern
+            ref_num_id = None
+            for i in range(ref_start_idx + 1, min(ref_start_idx + 10, len(paragraphs))):
+                para = paragraphs[i]
+                num_pr = para.find(".//w:numPr", namespaces)
+                if num_pr is not None:
+                    num_id_elem = num_pr.find(".//w:numId", namespaces)
+                    if num_id_elem is not None:
+                        ref_num_id = num_id_elem.get("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val")
+                        break
+
+            if ref_num_id is None:
+                # Fallback to text-based extraction
+                return []
+
+            # Extract references with auto-numbering
+            references = []
+            ref_count = 0
+
+            for i in range(ref_start_idx + 1, len(paragraphs)):
+                para = paragraphs[i]
+
+                # Check if this paragraph has the reference numbering
+                num_pr = para.find(".//w:numPr", namespaces)
+                if num_pr is not None:
+                    num_id_elem = num_pr.find(".//w:numId", namespaces)
+                    if num_id_elem is not None:
+                        para_num_id = num_id_elem.get("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val")
+                        if para_num_id == ref_num_id:
+                            ref_count += 1
+
+                            # Extract text
+                            text_elements = para.findall(".//w:t", namespaces)
+                            para_text = "".join([t.text for t in text_elements if t.text]).strip()
+
+                            if para_text:
+                                references.append({
+                                    "number": ref_count,
+                                    "text": para_text,
+                                    "full_text": para_text,
+                                })
+
+                # Check for end markers
+                text_elements = para.findall(".//w:t", namespaces)
+                para_text = "".join([t.text for t in text_elements if t.text]).strip()
+                if para_text.startswith("附录") or para_text.startswith("后记"):
+                    break
+
+            return references
+
+    except Exception as e:
+        print(f"Error extracting references from XML: {e}")
+        return []
+
+
 def extract_references(paragraphs):
     """Extract reference list from document."""
     references = []
@@ -813,6 +894,111 @@ def find_citation_suggestions(unreferenced_refs, references, paragraphs, ref_sta
     return suggestions
 
 
+def check_references_heading_level(docx_path):
+    """Check if '参考文献' is under a level 1 heading."""
+    try:
+        with zipfile.ZipFile(docx_path, "r") as docx:
+            document_xml = docx.read("word/document.xml")
+            root = ET.fromstring(document_xml)
+
+            namespaces = {
+                "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
+            }
+
+            paragraphs = root.findall(".//w:p", namespaces)
+
+            # Find "参考文献" paragraph
+            ref_heading_idx = None
+            for i, para in enumerate(paragraphs):
+                text_elements = para.findall(".//w:t", namespaces)
+                para_text = "".join([t.text for t in text_elements if t.text])
+                if para_text.strip() == "参考文献":
+                    ref_heading_idx = i
+                    break
+
+            if ref_heading_idx is None:
+                return {
+                    "found": True,
+                    "message": "未找到'参考文献'标题",
+                    "is_level1": False,
+                    "actual_level": None
+                }
+
+            # Check if it's a level 1 heading
+            ref_para = paragraphs[ref_heading_idx]
+
+            # Method 1: Check paragraph style
+            pPr = ref_para.find(".//w:pPr", namespaces)
+            is_level1 = False
+            actual_level = None
+            style_name = None
+
+            if pPr is not None:
+                # Check outline level
+                outline_lvl = pPr.find(".//w:outlineLvl", namespaces)
+                if outline_lvl is not None:
+                    level_val = outline_lvl.get("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val")
+                    if level_val == "0":  # Level 1 is 0 in Word
+                        is_level1 = True
+                        actual_level = 1
+                    else:
+                        actual_level = int(level_val) + 1
+
+                # Check style
+                pStyle = pPr.find(".//w:pStyle", namespaces)
+                if pStyle is not None:
+                    style_name = pStyle.get("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val")
+                    # Check if it's a heading 1 style
+                    if style_name and ("Heading 1" in style_name or "标题 1" in style_name or "heading 1" in style_name.lower()):
+                        is_level1 = True
+                        actual_level = 1
+
+            # If no outline level or style found, check if it looks like a heading
+            if actual_level is None:
+                # Check formatting (bold, larger font, etc.)
+                runs = ref_para.findall(".//w:r", namespaces)
+                has_bold = False
+                has_large_font = False
+
+                for run in runs:
+                    rPr = run.find(".//w:rPr", namespaces)
+                    if rPr is not None:
+                        # Check bold
+                        b = rPr.find(".//w:b", namespaces)
+                        if b is not None:
+                            has_bold = True
+
+                        # Check font size
+                        sz = rPr.find(".//w:sz", namespaces)
+                        if sz is not None:
+                            sz_val = sz.get("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}val")
+                            if sz_val and int(sz_val) >= 288:  # 16pt = 288 twips
+                                has_large_font = True
+
+                # If it has bold and large font, might be a heading
+                if has_bold and has_large_font:
+                    actual_level = "可能是一级标题（基于格式）"
+                else:
+                    actual_level = "普通段落"
+
+            return {
+                "found": True,
+                "message": "找到'参考文献'标题",
+                "is_level1": is_level1,
+                "actual_level": actual_level,
+                "style_name": style_name,
+                "paragraph_index": ref_heading_idx + 1
+            }
+
+    except Exception as e:
+        return {
+            "found": True,
+            "message": f"检查参考文献标题时出错: {e}",
+            "is_level1": False,
+            "actual_level": None
+        }
+
+
 def check_unreferenced_references(docx_path):
     """Check which references are not cited."""
     print("Extracting text from document...")
@@ -825,7 +1011,11 @@ def check_unreferenced_references(docx_path):
     print(f"Found {len(paragraphs)} paragraphs")
 
     print("Extracting references...")
-    references = extract_references(paragraphs)
+    # Try XML-based extraction first (handles Word auto-numbering)
+    references = extract_references_from_xml(docx_path)
+    if not references or len(references) < 10:
+        # Fallback to text-based extraction
+        references = extract_references(paragraphs)
     print(f"Found {len(references)} references")
 
     if not references:
@@ -867,6 +1057,37 @@ def check_unreferenced_references(docx_path):
     )
     print(f"Found suggestions for {len(suggestions)} unreferenced references")
 
+    # Check if "参考文献" is under a level 1 heading
+    heading_check = None
+    try:
+        from config_loader import ConfigLoader
+        config_loader = ConfigLoader()
+        config = config_loader.load()
+        refs_config = config.get("references", {})
+        validation_config = refs_config.get("validation", {})
+
+        if validation_config.get("check_heading_level", True):
+            print("Checking if '参考文献' is under a level 1 heading...")
+            heading_check = check_references_heading_level(docx_path)
+            if heading_check.get("is_level1"):
+                print("✓ '参考文献' is correctly under a level 1 heading")
+            else:
+                print(f"⚠ '参考文献' heading level check: {heading_check.get('message', 'N/A')}")
+                if heading_check.get("actual_level"):
+                    print(f"  Actual level: {heading_check.get('actual_level')}")
+        else:
+            print("References heading level check is disabled in config.")
+    except Exception as e:
+        # If config loading fails, still perform the check
+        print("Checking if '参考文献' is under a level 1 heading...")
+        heading_check = check_references_heading_level(docx_path)
+        if heading_check.get("is_level1"):
+            print("✓ '参考文献' is correctly under a level 1 heading")
+        else:
+            print(f"⚠ '参考文献' heading level check: {heading_check.get('message', 'N/A')}")
+            if heading_check.get("actual_level"):
+                print(f"  Actual level: {heading_check.get('actual_level')}")
+
     return {
         "references": references,
         "citations": citations,
@@ -874,6 +1095,7 @@ def check_unreferenced_references(docx_path):
         "all_reference_numbers": all_ref_numbers,
         "duplicates": duplicates,
         "suggestions": suggestions,
+        "heading_check": heading_check,
     }
 
 
@@ -896,6 +1118,16 @@ def generate_report(docx_path, result, superscript_check=None):
     if result.get("duplicates"):
         unique_count = len(result["references"]) - len(result["duplicates"])
         md_content.append(f"- **实际唯一参考文献数**: {unique_count}")
+
+    # Add heading level check result
+    heading_check = result.get("heading_check", {})
+    if heading_check:
+        if heading_check.get("is_level1"):
+            md_content.append("- **参考文献标题级别**: ✅ 正确（一级标题）")
+        else:
+            actual_level = heading_check.get("actual_level", "未知")
+            md_content.append(f"- **参考文献标题级别**: ❌ 不符合要求（当前级别: {actual_level}，应为一级标题）")
+
     if superscript_check:
         if superscript_check["found"]:
             md_content.append(
@@ -998,6 +1230,30 @@ def generate_report(docx_path, result, superscript_check=None):
         else:
             md_content.append("✅ **状态**: 通过\n")
             md_content.append(f"**结果**: {superscript_check['message']}\n")
+
+    md_content.append("\n---\n")
+
+    # Add heading level check section
+    heading_check = result.get("heading_check", {})
+    if heading_check:
+        md_content.append("\n## 参考文献标题级别检查\n")
+        if heading_check.get("is_level1"):
+            md_content.append("✅ **状态**: 通过\n")
+            md_content.append("**结果**: '参考文献'标题正确位于一级标题下\n")
+            if heading_check.get("paragraph_index"):
+                md_content.append(f"**位置**: 段落 {heading_check.get('paragraph_index')}\n")
+        else:
+            md_content.append("❌ **状态**: 不符合要求\n")
+            actual_level = heading_check.get("actual_level", "未知")
+            style_name = heading_check.get("style_name", "无")
+            md_content.append(f"**结果**: '参考文献'标题不是一级标题\n")
+            md_content.append(f"**当前级别**: {actual_level}\n")
+            if style_name:
+                md_content.append(f"**段落样式**: {style_name}\n")
+            if heading_check.get("paragraph_index"):
+                md_content.append(f"**位置**: 段落 {heading_check.get('paragraph_index')}\n")
+            md_content.append("\n**要求**: '参考文献'应设置为一级标题（标题1/Heading 1）\n")
+        md_content.append("")
 
     md_content.append("\n---\n")
     md_content.append("\n*报告由参考文献检查脚本自动生成*\n")

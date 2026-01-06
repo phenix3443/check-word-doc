@@ -16,6 +16,7 @@ from header_footer import (
 )
 from empty_lines import check_consecutive_empty_lines
 from figure import check_figure_empty_lines, check_caption_alignment
+from check_references import check_unreferenced_references
 
 
 def run_cover_check(docx_path):
@@ -660,4 +661,65 @@ def run_captions_check(docx_path):
         print("   ✓ All captions are centered")
 
     return caption_check
+
+
+def run_references_check(docx_path):
+    """Run references check."""
+    print("Checking references format and citations...")
+    try:
+        config_loader = ConfigLoader()
+        config = config_loader.load()
+        references_config = config.get("references", {})
+        if references_config.get("enabled", True):
+            references_check = check_unreferenced_references(docx_path)
+
+            if references_check.get("error"):
+                print(f"   ✗ Error: {references_check['message']}")
+                return references_check
+
+            total_refs = len(references_check.get("references", []))
+            cited_refs = len(references_check.get("citations", []))
+            unreferenced = len(references_check.get("unreferenced", []))
+            duplicates = len(references_check.get("duplicates", []))
+
+            print(f"   Total references: {total_refs}")
+            print(f"   Cited references: {cited_refs}")
+            print(f"   Unreferenced references: {unreferenced}")
+            print(f"   Duplicate references: {duplicates}")
+
+            issues_found = unreferenced > 0 or duplicates > 0
+
+            if issues_found:
+                print()
+                print("   WARNING: Reference issues found!")
+                if unreferenced > 0:
+                    print(f"   Found {unreferenced} unreferenced reference(s)")
+                if duplicates > 0:
+                    print(f"   Found {duplicates} duplicate reference(s)")
+            else:
+                print("   ✓ All references are properly cited and unique")
+
+            # Convert to standard format
+            return {
+                "found": issues_found,
+                "message": f"Found {unreferenced} unreferenced and {duplicates} duplicate references" if issues_found else "All references are properly cited and unique",
+                "details": references_check,
+                "total_references": total_refs,
+                "cited_references": cited_refs,
+                "unreferenced_count": unreferenced,
+                "duplicates_count": duplicates
+            }
+        else:
+            print("   References check is disabled")
+            return {"enabled": False, "message": "References check is disabled in configuration"}
+
+    except Exception as e:
+        error_msg = f"Error during references check: {str(e)}"
+        print(f"   ✗ {error_msg}")
+        return {
+            "found": True,
+            "message": error_msg,
+            "details": {},
+            "error": True
+        }
 
