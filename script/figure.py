@@ -139,15 +139,20 @@ def check_caption_alignment(docx_path, required_alignment=None):
     """
     if required_alignment is None:
         from config_loader import ConfigLoader
-        try:
-            config_loader = ConfigLoader()
-            config = config_loader.load()
-            captions_config = config.get("captions", {})
-            figure_config = captions_config.get("figure", {})
-            format_config = figure_config.get("format", {})
-            required_alignment = format_config.get("alignment", "center")
-        except Exception:
-            required_alignment = "center"
+        config_loader = ConfigLoader()
+        config = config_loader.load()
+        captions_config = config.get("captions", {})
+        if not captions_config:
+            raise ValueError("Captions configuration not found in config file")
+        figure_config = captions_config.get("figure", {})
+        if not figure_config:
+            raise ValueError("Figure caption configuration not found in config file")
+        format_config = figure_config.get("format", {})
+        if not format_config:
+            raise ValueError("Figure caption format configuration not found in config file")
+        required_alignment = format_config.get("alignment")
+        if not required_alignment:
+            raise ValueError("Figure caption alignment not specified in config file (captions.figure.format.alignment)")
     
     caption_issues = []
 

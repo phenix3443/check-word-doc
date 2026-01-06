@@ -114,14 +114,17 @@ def check_cover_font(docx_path, required_font=None):
     if required_font is None:
         from config_loader import ConfigLoader
 
-        try:
-            config_loader = ConfigLoader()
-            config = config_loader.load()
-            cover_config = config.get("cover", {})
-            format_config = cover_config.get("format", {})
-            required_font = format_config.get("font", "黑体")
-        except Exception:
-            required_font = "黑体"
+        config_loader = ConfigLoader()
+        config = config_loader.load()
+        cover_config = config.get("cover", {})
+        if not cover_config:
+            raise ValueError("Cover configuration not found in config file")
+        format_config = cover_config.get("format", {})
+        if not format_config:
+            raise ValueError("Cover format configuration not found in config file")
+        required_font = format_config.get("font")
+        if not required_font:
+            raise ValueError("Cover font not specified in config file (cover.format.font)")
     issues = []
 
     try:

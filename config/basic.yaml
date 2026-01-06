@@ -1,0 +1,77 @@
+# 基本配置 - 所有文档都必须遵循的规则
+# 此文件包含所有文档类型都必须遵守的基本规则，不应被覆盖
+#
+# 使用方式：
+# 在其他配置文件中使用 import 导入：
+#   import: basic.yaml
+
+# ============================================================================
+# 检查项开关（基本配置）
+# 列表中的检查项将被启用，不在列表中的将被禁用
+# ============================================================================
+checks:
+  - cover # 封面检查
+  - table_of_contents # 目录检查
+  - figure_list # 图目录检查
+  - table_list # 表目录检查
+  - body_paragraphs # 正文段落检查
+  - body_headings # 正文标题检查
+  - captions # 图表题注检查
+  - references # 参考文献检查
+  - attachments # 附件检查
+  - headers # 页眉检查
+  - footers # 页脚检查
+  - page_numbers # 页码检查
+  - empty_lines # 空行检查
+  - consecutive_empty_lines # 连续空行检查
+
+# ============================================================================
+# 页码基本要求（所有文档必须包含页码）
+# ============================================================================
+page_numbers:
+  enabled: true
+  required: true # 基本配置：文档必须包含页码
+  numbering:
+    check_continuity: true # 基本配置：页码必须连续
+  validation:
+    check_with_toc: true # 基本配置：页码必须与目录一致
+    check_with_figure_list: true # 基本配置：页码必须与图目录一致
+    check_with_table_list: true # 基本配置：页码必须与表目录一致
+  # 页码格式默认配置（可在文档特定配置中覆盖）
+  format:
+    size: 10 # 默认字号（Word中的数字字号）
+    position: "bottom_center" # 默认位置：底部居中
+    # 页码样式：支持分段页码配置
+    # 如果只配置 style，则所有部分使用相同样式
+    # 如果配置 sections，则可以为不同部分配置不同样式
+    style: "arabic" # 默认样式：阿拉伯数字（如果未配置 sections，则所有部分使用此样式）
+    # sections 配置（可选，如果配置则覆盖 style）
+    # sections:
+    #   contents: # 目录部分（封面、目录、图目录、表目录）
+    #     style: "roman" # 罗马数字（i, ii, iii, ...）
+    #   body: # 正文部分（目录之后）
+    #     style: "arabic" # 阿拉伯数字（1, 2, 3, ...）
+
+# ============================================================================
+# 参考文献基本要求（所有文档必须遵循）
+# ============================================================================
+references:
+  enabled: true
+  required: true # 基本配置：文档必须包含参考文献
+  citation:
+    check_superscript: true # 基本配置：参考文献必须在正文中通过上标引用
+    format_pattern: "^\\[\\d+(-\\d+)?(,\\s*\\d+)*\\]$" # 基本配置：引用格式
+  validation:
+    check_citation_match: true # 基本配置：引用必须在参考文献列表中存在
+    check_heading_level: true # 基本配置："参考文献"必须是一级标题
+    heading_text: "参考文献" # 基本配置：参考文献标题文本
+    heading_alignment: "center" # 基本配置："参考文献"标题默认居中
+
+# ============================================================================
+# 空行基本要求
+# ============================================================================
+empty_lines:
+  enabled: true
+  check_consecutive: true # 基本配置：检查连续空行
+  max_consecutive: 1 # 基本配置：最多允许1个连续空行
+

@@ -19,49 +19,168 @@ class ConfigError(Exception):
 class ConfigLoader:
     """Configuration loader and validator."""
 
-    def __init__(self, config_path: Optional[str] = None):
+    def __init__(self, config_path: str):
         """
         Initialize config loader.
 
         Args:
-            config_path: Path to configuration file. If None, uses default config.
+            config_path: Path to configuration file (required).
+                         Must be provided when calling load().
         """
+        if not config_path:
+            raise ConfigError("config_path is required and cannot be None or empty")
         self.config_path = config_path
         self.config: Dict[str, Any] = {}
-        self.default_config_path = self._get_default_config_path()
 
-    def _get_default_config_path(self) -> Path:
-        """Get path to default configuration file."""
+    def _get_example_config_path(self) -> Path:
+        """Get path to example configuration file."""
         script_dir = Path(__file__).parent
         project_root = script_dir.parent
-        return project_root / "config" / "default.yaml"
+        return project_root / "config" / "example.yaml"
+
+    def _get_basic_config_path(self) -> Path:
+        """Get path to basic configuration file."""
+        script_dir = Path(__file__).parent
+        project_root = script_dir.parent
+        return project_root / "config" / "basic.yaml"
+
+    def _resolve_import_path(self, import_path: str, current_file: Path) -> Path:
+        """
+        Resolve import path relative to current file only.
+
+        Args:
+            import_path: Import path (e.g., "basic.yaml" or "../config/basic.yaml")
+            current_file: Path to the current YAML file
+
+        Returns:
+            Resolved absolute path
+
+        Raises:
+            ConfigError: If import file is not found relative to current file
+        """
+        if Path(import_path).is_absolute():
+            resolved = Path(import_path)
+            if not resolved.exists():
+                raise ConfigError(f"Import file not found: {import_path}")
+            return resolved.resolve()
+
+        # Only try relative to current file (strict mode)
+        relative_to_file = current_file.parent / import_path
+        if relative_to_file.exists():
+            return relative_to_file.resolve()
+
+        # If not found, raise error
+        raise ConfigError(
+            f"Import file not found: {import_path} "
+            f"(searched relative to {current_file.parent}). "
+            f"Please use a relative path from the current file or an absolute path."
+        )
+
+    def _load_yaml_with_imports(
+        self, file_path: Path, loaded_files: Optional[set] = None
+    ) -> Dict[str, Any]:
+        """
+        Load YAML file and handle imports.
+
+        Args:
+            file_path: Path to YAML file
+            loaded_files: Set of already loaded files to prevent circular imports
+
+        Returns:
+            Loaded configuration dictionary
+        """
+        if loaded_files is None:
+            loaded_files = set()
+
+        file_path = file_path.resolve()
+
+        # Prevent circular imports
+        if str(file_path) in loaded_files:
+            raise ConfigError(f"Circular import detected: {file_path}")
+
+        loaded_files.add(str(file_path))
+
+        if not file_path.exists():
+            raise ConfigError(f"Configuration file not found: {file_path}")
+
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                config = yaml.safe_load(f)
+        except yaml.YAMLError as e:
+            raise ConfigError(f"Error parsing YAML file {file_path}: {e}")
+        except Exception as e:
+            raise ConfigError(f"Error reading configuration file {file_path}: {e}")
+
+        if config is None:
+            raise ConfigError(f"Configuration file is empty: {file_path}")
+
+        # Handle imports
+        if isinstance(config, dict) and "import" in config:
+            import_paths = config["import"]
+            if isinstance(import_paths, str):
+                import_paths = [import_paths]
+
+            # Load imported files first
+            imported_config = {}
+            for import_path in import_paths:
+                resolved_path = self._resolve_import_path(import_path, file_path)
+                imported = self._load_yaml_with_imports(resolved_path, loaded_files)
+                imported_config = self._deep_merge(imported_config, imported)
+
+            # Remove import key and merge with imported config
+            config_without_import = {k: v for k, v in config.items() if k != "import"}
+            config = self._deep_merge(imported_config, config_without_import)
+
+        loaded_files.remove(str(file_path))
+        return config
+
+    def _deep_merge(
+        self, base: Dict[str, Any], override: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Deep merge two dictionaries, with override taking precedence.
+
+        Args:
+            base: Base dictionary
+            override: Override dictionary
+
+        Returns:
+            Merged dictionary
+        """
+        result = base.copy()
+        for key, value in override.items():
+            if (
+                key in result
+                and isinstance(result[key], dict)
+                and isinstance(value, dict)
+            ):
+                result[key] = self._deep_merge(result[key], value)
+            else:
+                result[key] = value
+        return result
 
     def load(self) -> Dict[str, Any]:
         """
         Load configuration from file.
+        Supports YAML import syntax: add "import: basic.yaml" at the top of config file.
+        Configuration file path must be provided via config_path parameter.
 
         Returns:
             Configuration dictionary.
 
         Raises:
-            ConfigError: If configuration file cannot be loaded or is invalid.
+            ConfigError: If configuration file path is not provided or file cannot be loaded or is invalid.
         """
-        config_file = self.config_path if self.config_path else self.default_config_path
+        if not self.config_path:
+            raise ConfigError(
+                "Configuration file path is required. Please specify a config file using --config option."
+            )
 
+        config_file = Path(self.config_path)
         if not config_file.exists():
             raise ConfigError(f"Configuration file not found: {config_file}")
 
-        try:
-            with open(config_file, "r", encoding="utf-8") as f:
-                self.config = yaml.safe_load(f)
-        except yaml.YAMLError as e:
-            raise ConfigError(f"Error parsing YAML file: {e}")
-        except Exception as e:
-            raise ConfigError(f"Error reading configuration file: {e}")
-
-        if self.config is None:
-            raise ConfigError("Configuration file is empty")
-
+        self.config = self._load_yaml_with_imports(config_file)
         self._validate_config()
         return self.config
 
@@ -78,8 +197,8 @@ class ConfigLoader:
         if "checks" not in self.config:
             raise ConfigError("Configuration must contain 'checks' section")
 
-        if not isinstance(self.config["checks"], dict):
-            raise ConfigError("'checks' section must be a dictionary")
+        if not isinstance(self.config["checks"], (list, dict)):
+            raise ConfigError("'checks' section must be a list or dictionary")
 
         self._validate_checks_section()
         self._validate_check_items()
@@ -104,9 +223,18 @@ class ConfigLoader:
             "consecutive_empty_lines",
         ]
 
-        for check_name, enabled in checks.items():
-            if not isinstance(enabled, bool):
-                raise ConfigError(f"Check '{check_name}' must be a boolean value")
+        if not isinstance(checks, list):
+            raise ConfigError("'checks' section must be a list")
+
+        for check_name in checks:
+            if not isinstance(check_name, str):
+                raise ConfigError(
+                    f"Check item must be a string, got {type(check_name)}"
+                )
+            if check_name not in valid_check_names:
+                raise ConfigError(
+                    f"Invalid check name: '{check_name}'. Valid names: {', '.join(valid_check_names)}"
+                )
 
     def _validate_check_items(self):
         """Validate individual check item configurations."""
@@ -148,7 +276,14 @@ class ConfigLoader:
         """
         if "checks" not in self.config:
             return False
-        return self.config["checks"].get(check_name, False)
+        checks = self.config["checks"]
+        # Support both list and dict formats for backward compatibility
+        if isinstance(checks, list):
+            return check_name in checks
+        elif isinstance(checks, dict):
+            return checks.get(check_name, False)
+        else:
+            return False
 
     def get_check_config(self, check_name: str) -> Optional[Dict[str, Any]]:
         """
@@ -261,15 +396,22 @@ class ConfigLoader:
         if "checks" not in self.config:
             return []
 
-        return [name for name, enabled in self.config["checks"].items() if enabled]
+        checks = self.config["checks"]
+        # Support both list and dict formats for backward compatibility
+        if isinstance(checks, list):
+            return list(checks)
+        elif isinstance(checks, dict):
+            return [name for name, enabled in checks.items() if enabled]
+        else:
+            return []
 
 
-def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
+def load_config(config_path: str) -> Dict[str, Any]:
     """
     Convenience function to load configuration.
 
     Args:
-        config_path: Path to configuration file. If None, uses default config.
+        config_path: Path to configuration file (required).
 
     Returns:
         Configuration dictionary.
@@ -277,28 +419,26 @@ def load_config(config_path: Optional[str] = None) -> Dict[str, Any]:
     Raises:
         ConfigError: If configuration cannot be loaded.
     """
+    if not config_path:
+        raise ConfigError("config_path is required and cannot be None or empty")
     loader = ConfigLoader(config_path)
     return loader.load()
 
 
-def get_default_config() -> Dict[str, Any]:
-    """
-    Get default configuration.
-
-    Returns:
-        Default configuration dictionary.
-
-    Raises:
-        ConfigError: If default configuration cannot be loaded.
-    """
-    loader = ConfigLoader()
-    return loader.load()
-
-
 if __name__ == "__main__":
+    import sys
+
+    if len(sys.argv) < 2:
+        print("Usage: python config_loader.py <config_file_path>")
+        print("Example: python config_loader.py config/example.yaml")
+        sys.exit(1)
+
     try:
-        config = load_config()
+        config_path = sys.argv[1]
+        loader = ConfigLoader(config_path)
+        config = loader.load()
         print("Configuration loaded successfully!")
-        print(f"Enabled checks: {', '.join(ConfigLoader().get_all_enabled_checks())}")
+        print(f"Enabled checks: {', '.join(loader.get_all_enabled_checks())}")
     except ConfigError as e:
         print(f"Error loading configuration: {e}")
+        sys.exit(1)

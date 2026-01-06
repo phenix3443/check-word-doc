@@ -23,13 +23,14 @@ def check_consecutive_empty_lines(docx_path, max_consecutive=None):
     if max_consecutive is None:
         from config_loader import ConfigLoader
 
-        try:
-            config_loader = ConfigLoader()
-            config = config_loader.load()
-            empty_lines_config = config.get("empty_lines", {})
-            max_consecutive = empty_lines_config.get("max_consecutive", 1)
-        except Exception:
-            max_consecutive = 1
+        config_loader = ConfigLoader()
+        config = config_loader.load()
+        empty_lines_config = config.get("empty_lines", {})
+        if not empty_lines_config:
+            raise ValueError("Empty lines configuration not found in config file")
+        max_consecutive = empty_lines_config.get("max_consecutive")
+        if max_consecutive is None:
+            raise ValueError("max_consecutive not specified in config file (empty_lines.max_consecutive)")
     """Check for consecutive empty lines in document body."""
     consecutive_empty = []
 

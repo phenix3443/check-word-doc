@@ -16,6 +16,36 @@ from header_footer import (
 )
 from empty_lines import check_consecutive_empty_lines
 from figure import check_figure_empty_lines, check_caption_alignment
+from page_numbers import check_page_numbers
+
+
+def _is_check_enabled(config_loader, check_name, item_config):
+    """
+    Check if a check item is enabled with priority control.
+    
+    Priority:
+    1. checks.<check_name> (top-level control) - if False, check is disabled
+    2. <check_name>.enabled (item-level control) - if False, check is disabled
+    
+    Args:
+        config_loader: ConfigLoader instance
+        check_name: Name of the check (e.g., "cover", "page_numbers")
+        item_config: Configuration dictionary for the check item
+        
+    Returns:
+        True if check is enabled, False otherwise
+    """
+    # First check top-level checks section
+    if not config_loader.get_check_enabled(check_name):
+        return False
+    
+    # Then check item-level enabled flag
+    if not item_config.get("enabled", True):
+        return False
+    
+    return True
+
+
 from check_references import check_unreferenced_references
 
 
@@ -26,9 +56,24 @@ def run_cover_check(docx_path):
         config_loader = ConfigLoader()
         config = config_loader.load()
         cover_config = config.get("cover", {})
+        
+        # Check if check is enabled (with priority control)
+        if not _is_check_enabled(config_loader, "cover", cover_config):
+            cover_check = {
+                "found": False,
+                "message": "Cover check is disabled",
+                "details": [],
+            }
+            print(f"   Result: {cover_check['message']}")
+            return cover_check
+        
         if cover_config.get("enabled", True):
             format_config = cover_config.get("format", {})
-            required_font = format_config.get("font", "黑体")
+            if not format_config:
+                raise ValueError("Cover format configuration not found in config file")
+            required_font = format_config.get("font")
+            if not required_font:
+                raise ValueError("Cover font not specified in config file (cover.format.font)")
             cover_check = check_cover_font(docx_path, required_font=required_font)
             print(f"   Result: {cover_check['message']}")
 
@@ -69,6 +114,85 @@ def run_cover_check(docx_path):
         return {"found": False, "message": f"Error: {e}", "details": []}
 
 
+def run_page_numbers_check(docx_path, config_loader=None):
+    """Run page numbers check."""
+    print("Checking page numbers format and style...")
+    try:
+        if config_loader is None:
+            raise ValueError("ConfigLoader instance is required. Please pass config_loader parameter.")
+        config = config_loader.config
+        page_numbers_config = config.get("page_numbers", {})
+        
+        # Check if check is enabled (with priority control)
+        if not _is_check_enabled(config_loader, "page_numbers", page_numbers_config):
+            page_numbers_result = {
+                "format": {"found": False, "message": "Page numbers check is disabled", "details": []},
+                "style": {"found": False, "message": "Page numbers check is disabled", "details": []},
+            }
+            print(f"   Result: Page numbers check is disabled")
+            return page_numbers_result
+        
+        if page_numbers_config.get("enabled", True):
+            page_numbers_result = check_page_numbers(docx_path, page_numbers_config)
+            
+            # Print format check results
+            format_result = page_numbers_result.get("format", {})
+            print(f"   Format: {format_result.get('message', 'N/A')}")
+            
+            if format_result.get("found"):
+                print("   WARNING: Page number format issues found!")
+                if format_result.get("details"):
+                    details = format_result["details"]
+                    print(f"   Found {len(details)} format issue(s)")
+                    if len(details) > 10:
+                        print("   First 5 locations:")
+                        for detail in details[:5]:
+                            print(f"      - {detail.get('footer_file', 'N/A')}: {detail.get('issue', 'N/A')}")
+                        print("   ...")
+                    else:
+                        for detail in details:
+                            print(f"      - {detail.get('footer_file', 'N/A')}: {detail.get('issue', 'N/A')}")
+            else:
+                print("   ✓ Page number format is correct")
+            
+            print()
+            
+            # Print style check results
+            style_result = page_numbers_result.get("style", {})
+            print(f"   Style: {style_result.get('message', 'N/A')}")
+            
+            if style_result.get("found"):
+                print("   WARNING: Page number style issues found!")
+                if style_result.get("details"):
+                    details = style_result["details"]
+                    print(f"   Found {len(details)} style issue(s)")
+                    if len(details) > 10:
+                        print("   First 5 locations:")
+                        for detail in details[:5]:
+                            print(f"      - {detail.get('footer_file', 'N/A')}: {detail.get('issue', 'N/A')}")
+                        print("   ...")
+                    else:
+                        for detail in details:
+                            print(f"      - {detail.get('footer_file', 'N/A')}: {detail.get('issue', 'N/A')}")
+            else:
+                print("   ✓ Page number style is correct")
+            
+            return page_numbers_result
+        else:
+            page_numbers_result = {
+                "format": {"found": False, "message": "Page numbers check is disabled", "details": []},
+                "style": {"found": False, "message": "Page numbers check is disabled", "details": []},
+            }
+            print(f"   Result: Page numbers check is disabled")
+            return page_numbers_result
+    except Exception as e:
+        print(f"   Error loading page numbers config: {e}")
+        return {
+            "format": {"found": False, "message": f"Error: {e}", "details": []},
+            "style": {"found": False, "message": f"Error: {e}", "details": []},
+        }
+
+
 def run_toc_check(docx_path):
     """Run table of contents check with parallel execution."""
     print("Checking table of contents (order, format, numbering, page accuracy)...")
@@ -76,6 +200,17 @@ def run_toc_check(docx_path):
         config_loader = ConfigLoader()
         config = config_loader.load()
         toc_config = config.get("table_of_contents", {})
+        
+        # Check if check is enabled (with priority control)
+        if not _is_check_enabled(config_loader, "table_of_contents", toc_config):
+            toc_check = {
+                "order": {"found": False, "message": "TOC check is disabled"},
+                "format": {"found": False, "message": "TOC check is disabled"},
+                "numbering": {"found": False, "message": "TOC check is disabled"},
+                "page_accuracy": {"found": False, "message": "TOC check is disabled"},
+            }
+            print(f"   Result: TOC check is disabled")
+            return toc_check
 
         if toc_config.get("enabled", True):
             # All TOC checks run in parallel: order, format, numbering, page accuracy
@@ -183,6 +318,16 @@ def run_figure_list_check(docx_path):
         config_loader = ConfigLoader()
         config = config_loader.load()
         figure_list_config = config.get("figure_list", {})
+        
+        # Check if check is enabled (with priority control)
+        if not _is_check_enabled(config_loader, "figure_list", figure_list_config):
+            figure_list_results = {
+                "format": {"found": False, "message": "Figure list check is disabled", "details": []},
+                "numbering": {"found": False, "message": "Figure list check is disabled", "details": []},
+                "page_accuracy": {"found": False, "message": "Figure list check is disabled", "details": []},
+            }
+            print(f"   Result: Figure list check is disabled")
+            return figure_list_results
 
         if figure_list_config.get("enabled", True):
             figure_list_results = check_toc_all(
@@ -277,6 +422,16 @@ def run_table_list_check(docx_path):
         config_loader = ConfigLoader()
         config = config_loader.load()
         table_list_config = config.get("table_list", {})
+        
+        # Check if check is enabled (with priority control)
+        if not _is_check_enabled(config_loader, "table_list", table_list_config):
+            table_list_results = {
+                "format": {"found": False, "message": "Table list check is disabled", "details": []},
+                "numbering": {"found": False, "message": "Table list check is disabled", "details": []},
+                "page_accuracy": {"found": False, "message": "Table list check is disabled", "details": []},
+            }
+            print(f"   Result: Table list check is disabled")
+            return table_list_results
 
         if table_list_config.get("enabled", True):
             table_list_results = check_toc_all(
@@ -366,6 +521,21 @@ def run_table_list_check(docx_path):
 
 def run_headers_check(docx_path):
     """Run headers check."""
+    try:
+        config_loader = ConfigLoader()
+        config = config_loader.load()
+        headers_config = config.get("headers", {})
+        
+        # Check if check is enabled (with priority control)
+        if not _is_check_enabled(config_loader, "headers", headers_config):
+            return {
+                "headers": [],
+                "consistency": {"consistent": True, "message": "Headers check is disabled"},
+                "usage_info": None,
+            }
+    except Exception as e:
+        print(f"   Error loading headers config: {e}")
+    
     print("Analyzing header/footer usage...")
     usage_info = analyze_header_footer_usage(docx_path)
     print()
@@ -417,6 +587,20 @@ def run_headers_check(docx_path):
 
 def run_footers_check(docx_path, usage_info=None):
     """Run footers check."""
+    try:
+        config_loader = ConfigLoader()
+        config = config_loader.load()
+        footers_config = config.get("footers", {})
+        
+        # Check if check is enabled (with priority control)
+        if not _is_check_enabled(config_loader, "footers", footers_config):
+            return {
+                "footers": [],
+                "consistency": {"consistent": True, "message": "Footers check is disabled"},
+            }
+    except Exception as e:
+        print(f"   Error loading footers config: {e}")
+    
     if usage_info is None:
         print("Analyzing header/footer usage...")
         usage_info = analyze_header_footer_usage(docx_path)
@@ -474,8 +658,21 @@ def run_empty_lines_check(docx_path):
         config_loader = ConfigLoader()
         config = config_loader.load()
         empty_lines_config = config.get("empty_lines", {})
+        
+        # Check if check is enabled (with priority control)
+        if not _is_check_enabled(config_loader, "empty_lines", empty_lines_config):
+            empty_lines_check = {
+                "found": False,
+                "message": "Empty lines check is disabled",
+                "details": [],
+            }
+            print(f"   Result: {empty_lines_check['message']}")
+            return empty_lines_check
+        
         if empty_lines_config.get("enabled", True):
-            max_consecutive = empty_lines_config.get("max_consecutive", 1)
+            max_consecutive = empty_lines_config.get("max_consecutive")
+            if max_consecutive is None:
+                raise ValueError("max_consecutive not specified in config file (empty_lines.max_consecutive)")
             empty_lines_check = check_consecutive_empty_lines(
                 docx_path, max_consecutive=max_consecutive
             )
@@ -547,6 +744,25 @@ def run_empty_lines_check(docx_path):
 
 def run_figures_check(docx_path):
     """Run figures check."""
+    try:
+        config_loader = ConfigLoader()
+        config = config_loader.load()
+        # Note: figures check doesn't have its own config section, 
+        # it's part of captions, so we check captions
+        captions_config = config.get("captions", {})
+        
+        # Check if check is enabled (with priority control)
+        if not _is_check_enabled(config_loader, "captions", captions_config):
+            figure_check = {
+                "found": False,
+                "message": "Figures check is disabled",
+                "details": [],
+            }
+            print(f"   Result: {figure_check['message']}")
+            return figure_check
+    except Exception as e:
+        print(f"   Error loading config: {e}")
+    
     print("Checking figure empty lines...")
     figure_check = check_figure_empty_lines(docx_path)
     print(f"   Result: {figure_check['message']}")
@@ -587,10 +803,27 @@ def run_captions_check(docx_path):
         config_loader = ConfigLoader()
         config = config_loader.load()
         captions_config = config.get("captions", {})
+        
+        # Check if check is enabled (with priority control)
+        if not _is_check_enabled(config_loader, "captions", captions_config):
+            caption_check = {
+                "found": False,
+                "message": "Caption check is disabled",
+                "details": [],
+            }
+            print(f"   Result: {caption_check['message']}")
+            return caption_check
+        
         if captions_config.get("enabled", True):
             figure_config = captions_config.get("figure", {})
+            if not figure_config:
+                raise ValueError("Figure caption configuration not found in config file")
             format_config = figure_config.get("format", {})
-            required_alignment = format_config.get("alignment", "center")
+            if not format_config:
+                raise ValueError("Figure caption format configuration not found in config file")
+            required_alignment = format_config.get("alignment")
+            if not required_alignment:
+                raise ValueError("Figure caption alignment not specified in config file (captions.figure.format.alignment)")
             caption_check = check_caption_alignment(
                 docx_path, required_alignment=required_alignment
             )
@@ -663,15 +896,27 @@ def run_captions_check(docx_path):
     return caption_check
 
 
-def run_references_check(docx_path):
+def run_references_check(docx_path, config_loader=None):
     """Run references check."""
     print("Checking references format and citations...")
     try:
-        config_loader = ConfigLoader()
-        config = config_loader.load()
+        if config_loader is None:
+            raise ValueError("ConfigLoader instance is required. Please pass config_loader parameter.")
+        config = config_loader.config
         references_config = config.get("references", {})
+        
+        # Check if check is enabled (with priority control)
+        if not _is_check_enabled(config_loader, "references", references_config):
+            references_check = {
+                "found": False,
+                "message": "References check is disabled",
+                "details": [],
+            }
+            print(f"   Result: {references_check['message']}")
+            return references_check
+        
         if references_config.get("enabled", True):
-            references_check = check_unreferenced_references(docx_path)
+            references_check = check_unreferenced_references(docx_path, config=config)
 
             if references_check.get("error"):
                 print(f"   ✗ Error: {references_check['message']}")

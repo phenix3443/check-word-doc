@@ -740,7 +740,8 @@ def check_toc_page_accuracy(docx_path, section_type, validation_config):
                 )
                 toc_page = entry["toc_page"]
 
-                if abs(estimated_page - toc_page) > 2:
+                # 页码必须完全匹配，不允许有误差
+                if estimated_page != toc_page:
                     issues.append(
                         {
                             "paragraph": entry["paragraph"],

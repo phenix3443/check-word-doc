@@ -19,6 +19,7 @@ from check_functions import (
     run_figures_check,
     run_captions_check,
     run_references_check,
+    run_page_numbers_check,
 )
 from report import generate_markdown_report
 from config_loader import ConfigLoader
@@ -70,6 +71,7 @@ Examples:
             "figures",
             "captions",
             "references",
+            "page_numbers",
         ],
         help="Specific check item to run (can be specified multiple times)",
     )
@@ -88,8 +90,10 @@ Examples:
 
     parser.add_argument(
         "--config",
+        "-C",
         type=str,
-        help="Path to custom configuration file (YAML format)",
+        required=True,
+        help="Path to configuration file (YAML format, required)",
     )
 
     return parser.parse_args()
@@ -105,6 +109,7 @@ def list_available_checks():
         "table_list": "Check table list (format, numbering, page accuracy)",
         "headers": "Check header consistency",
         "footers": "Check footer consistency",
+        "page_numbers": "Check page numbers format and style",
         "empty_lines": "Check consecutive empty lines",
         "figures": "Check figure empty lines",
         "captions": "Check caption alignment",
@@ -161,6 +166,7 @@ def main():
             "figures",
             "captions",
             "references",
+            "page_numbers",
         ]
 
     print("=" * 80)
@@ -169,6 +175,10 @@ def main():
         print(f"Selected checks: {', '.join(checks_to_run)}")
     print("=" * 80)
     print()
+
+    # Load configuration
+    config_loader = ConfigLoader(str(config_path))
+    config_loader.load()
 
     structure = None
     if any(check in checks_to_run for check in ["headers", "footers", "all"]):
@@ -240,7 +250,13 @@ def main():
 
     if "references" in checks_to_run:
         print(f"{step}. ", end="")
-        results["references"] = run_references_check(docx_path)
+        results["references"] = run_references_check(docx_path, config_loader)
+        step += 1
+        print()
+
+    if "page_numbers" in checks_to_run:
+        print(f"{step}. ", end="")
+        results["page_numbers"] = run_page_numbers_check(docx_path, config_loader)
         step += 1
         print()
 
@@ -372,10 +388,18 @@ def main():
             footers = footers_result.get("footers", []) if footers_result else []
             consistency = headers_result.get("consistency", {}) if headers_result else {}
             footer_consistency = footers_result.get("consistency", {}) if footers_result else {}
+            
+            # Ensure structure has required keys
+            if structure is None:
+                structure = {'headers': [], 'footers': []}
+            elif 'headers' not in structure:
+                structure['headers'] = []
+            elif 'footers' not in structure:
+                structure['footers'] = []
 
             md_report = generate_markdown_report(
                 docx_path,
-                structure or {},
+                structure,
                 headers,
                 footers,
                 consistency,

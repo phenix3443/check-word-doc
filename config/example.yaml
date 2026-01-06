@@ -1,0 +1,293 @@
+# Word Document Format Check Configuration
+# Example configuration file for document format checking
+#
+# 配置说明：
+# - 此文件是一个示例配置文件，展示如何配置文档格式检查
+# - 此文件导入基本配置（basic.yaml），并定义默认样式
+# - 默认样式可以在文档特定配置中覆盖
+# - 基本配置（如：必须包含页码、参考文献必须上标引用等）在 basic.yaml 中
+# - 使用时，请复制此文件并根据需要修改，然后通过 --config 参数指定配置文件路径
+
+# 导入基本配置
+import: basic.yaml
+
+# ============================================================================
+# 默认样式配置 - 可以在文档特定配置中覆盖
+# ============================================================================
+
+# 封面检查配置（默认样式）
+cover:
+  enabled: true
+  format:
+    font: "黑体" # 默认样式，可覆盖
+
+# 目录检查配置（默认样式）
+table_of_contents:
+  enabled: true
+  required: true
+  max_levels: 3
+  order:
+    - table_of_contents
+    - figure_list
+    - table_list
+  styles:
+    TOC1:
+      font: "宋体" # 默认样式，可覆盖
+      size: 12 # 默认样式，可覆盖
+      alignment: left # 默认样式，可覆盖
+      indent_first_line: 0 # 默认样式，可覆盖
+    TOC2:
+      font: "宋体" # 默认样式，可覆盖
+      size: 12 # 默认样式，可覆盖
+      alignment: left # 默认样式，可覆盖
+      indent_left: 35.7 # 默认样式，可覆盖
+      indent_hanging: 17.85 # 默认样式，可覆盖
+    TOC3:
+      font: "宋体" # 默认样式，可覆盖
+      size: 12 # 默认样式，可覆盖
+      alignment: left # 默认样式，可覆盖
+      indent_left: 28.35 # 默认样式，可覆盖
+      indent_first_line: 17.85 # 默认样式，可覆盖
+  numbering:
+    check_continuity: true
+    check_format: true
+    format_pattern: "^\\d+(\\.\\d+)*$" # 默认样式，可覆盖
+
+# 图目录检查配置（默认样式）
+figure_list:
+  enabled: true
+  required: true
+  max_levels: 3
+  styles:
+    TOC1:
+      font: "宋体" # 默认样式，可覆盖
+      size: 12 # 默认样式，可覆盖
+      alignment: left # 默认样式，可覆盖
+      indent_first_line: 0 # 默认样式，可覆盖
+    TOC2:
+      font: "宋体" # 默认样式，可覆盖
+      size: 12 # 默认样式，可覆盖
+      alignment: left # 默认样式，可覆盖
+      indent_left: 35.7 # 默认样式，可覆盖
+      indent_hanging: 17.85 # 默认样式，可覆盖
+    TOC3:
+      font: "宋体" # 默认样式，可覆盖
+      size: 12 # 默认样式，可覆盖
+      alignment: left # 默认样式，可覆盖
+      indent_left: 28.35 # 默认样式，可覆盖
+      indent_first_line: 17.85 # 默认样式，可覆盖
+  numbering:
+    check_continuity: true
+    check_format: true
+    format_pattern: "^图\\s*\\d+(-\\d+)?$" # 默认样式，可覆盖
+  validation:
+    check_page_numbers: true
+    check_title_match: true
+
+# 表目录检查配置（默认样式）
+table_list:
+  enabled: true
+  required: true
+  max_levels: 3
+  styles:
+    TOC1:
+      font: "宋体" # 默认样式，可覆盖
+      size: 12 # 默认样式，可覆盖
+      alignment: left # 默认样式，可覆盖
+      indent_first_line: 0 # 默认样式，可覆盖
+    TOC2:
+      font: "宋体" # 默认样式，可覆盖
+      size: 12 # 默认样式，可覆盖
+      alignment: left # 默认样式，可覆盖
+      indent_left: 35.7 # 默认样式，可覆盖
+      indent_hanging: 17.85 # 默认样式，可覆盖
+    TOC3:
+      font: "宋体" # 默认样式，可覆盖
+      size: 12 # 默认样式，可覆盖
+      alignment: left # 默认样式，可覆盖
+      indent_left: 28.35 # 默认样式，可覆盖
+      indent_first_line: 17.85 # 默认样式，可覆盖
+  numbering:
+    check_continuity: true
+    check_format: true
+    format_pattern: "^表\\s*\\d+(-\\d+)?$" # 默认样式，可覆盖
+  validation:
+    check_page_numbers: true
+    check_title_match: true
+
+# 正文段落配置（默认样式）
+body_paragraphs:
+  enabled: true
+  format:
+    font: "宋体" # 默认样式，可覆盖
+    size: 12 # 默认样式，可覆盖
+    line_spacing: 1.5 # 默认样式，可覆盖
+    first_line_indent: 2 # 默认样式，可覆盖
+    alignment: justify # 默认样式，可覆盖
+    space_before: 0 # 默认样式，可覆盖
+    space_after: 0 # 默认样式，可覆盖
+  exclude_sections:
+    - "封面"
+    - "目录"
+    - "图目录"
+    - "表目录"
+    - "参考文献"
+    - "附件"
+    - "附录"
+
+# 正文标题配置（默认样式）
+body_headings:
+  enabled: true
+  levels:
+    - level: 1
+      font: "黑体" # 默认样式，可覆盖
+      size: 16 # 默认样式，可覆盖
+      bold: true # 默认样式，可覆盖
+      alignment: left # 默认样式，可覆盖
+      numbering_format: "^\\d+$" # 默认样式，可覆盖
+      space_before: 12 # 默认样式，可覆盖
+      space_after: 6 # 默认样式，可覆盖
+    - level: 2
+      font: "黑体" # 默认样式，可覆盖
+      size: 14 # 默认样式，可覆盖
+      bold: true # 默认样式，可覆盖
+      alignment: left # 默认样式，可覆盖
+      numbering_format: "^\\d+\\.\\d+$" # 默认样式，可覆盖
+      space_before: 6 # 默认样式，可覆盖
+      space_after: 3 # 默认样式，可覆盖
+    - level: 3
+      font: "黑体" # 默认样式，可覆盖
+      size: 12 # 默认样式，可覆盖
+      bold: true # 默认样式，可覆盖
+      alignment: left # 默认样式，可覆盖
+      numbering_format: "^\\d+\\.\\d+\\.\\d+$" # 默认样式，可覆盖
+      space_before: 3 # 默认样式，可覆盖
+      space_after: 0 # 默认样式，可覆盖
+  numbering:
+    check_continuity: true
+    check_hierarchy: true
+
+# 图表题注配置（默认样式）
+captions:
+  enabled: true
+  figure:
+    format:
+      font: "宋体" # 默认样式，可覆盖
+      size: 5 # 默认样式，可覆盖
+      alignment: center # 默认样式，可覆盖
+    numbering:
+      check_continuity: true
+      check_format: true
+      format_pattern: "^图\\s*\\d+(-\\d+)?$" # 默认样式，可覆盖
+    position:
+      check_empty_lines_before: true # 默认样式，可覆盖
+      check_empty_lines_after: true # 默认样式，可覆盖
+  table:
+    format:
+      font: "宋体" # 默认样式，可覆盖
+      size: 5 # 默认样式，可覆盖
+      alignment: center # 默认样式，可覆盖
+    numbering:
+      check_continuity: true
+      check_format: true
+      format_pattern: "^表\\s*\\d+(-\\d+)?$" # 默认样式，可覆盖
+    position:
+      check_empty_lines_before: true # 默认样式，可覆盖
+      check_empty_lines_after: true # 默认样式，可覆盖
+  consistency:
+    check_format_consistency: true
+
+# 参考文献格式配置（默认样式，基本要求在上面）
+references:
+  format:
+    font: "宋体" # 默认样式，可覆盖
+    size: 12 # 默认样式，可覆盖
+    alignment: left # 默认样式，可覆盖
+    line_spacing: 1.5 # 默认样式，可覆盖
+    first_line_indent: 0 # 默认样式，可覆盖
+    hanging_indent: 2 # 默认样式，可覆盖
+    space_before: 0 # 默认样式，可覆盖
+    space_after: 0 # 默认样式，可覆盖
+  numbering:
+    check_continuity: true
+    format_pattern: "^\\[\\d+\\]$" # 默认样式，可覆盖
+  citation:
+  validation:
+
+# 附件检查配置（默认样式）
+attachments:
+  enabled: true
+  required: false
+  format:
+    title:
+      font: "黑体" # 默认样式，可覆盖
+      size: 14 # 默认样式，可覆盖
+      bold: true # 默认样式，可覆盖
+      alignment: left # 默认样式，可覆盖
+  numbering:
+    check_continuity: true
+    format_pattern: "^附件[\\dA-Z]+$" # 默认样式，可覆盖
+
+# 页眉检查配置（默认样式）
+headers:
+  enabled: true
+  format:
+    font: "宋体" # 默认样式，可覆盖
+    size: 10 # 默认样式，可覆盖
+    alignment: center # 默认样式，可覆盖
+  consistency:
+    check_consistency: true
+    allow_different_by_section: false
+
+# 页脚检查配置（默认样式）
+footers:
+  enabled: true
+  format:
+    font: "宋体" # 默认样式，可覆盖
+    size: 10 # 默认样式，可覆盖
+    alignment: center # 默认样式，可覆盖
+  consistency:
+    check_consistency: true
+    allow_different_by_section: false
+
+# 页码格式配置（默认样式，基本要求在上面）
+page_numbers:
+  format:
+    size: 10 # 默认样式，可覆盖
+    position: "bottom_center" # 默认样式，可覆盖
+    style: "arabic" # 默认样式，可覆盖
+  numbering:
+    start_from_cover: false # 默认样式，可覆盖
+    start_from_contents: true # 默认样式，可覆盖
+    start_number: 1 # 默认样式，可覆盖
+  validation:
+# ============================================================================
+# 检查规则数据结构说明
+# ============================================================================
+# 基本配置：所有文档都必须遵循的规则，不应在文档特定配置中覆盖
+# 默认样式：可以在文档特定配置中覆盖的格式样式
+#
+# 每个检查项的配置结构：
+#   - enabled: 是否启用该检查项
+#   - format: 格式要求（默认样式，可覆盖）
+#     - font: 字体名称
+#     - size: 字号（数字，Word中的字号）
+#     - bold: 是否加粗（true/false）
+#     - alignment: 对齐方式（left/center/right/justify）
+#     - line_spacing: 行距（数字，如1.5表示1.5倍行距）
+#     - first_line_indent: 首行缩进（字符数）
+#     - hanging_indent: 悬挂缩进（字符数）
+#     - space_before: 段前间距（磅）
+#     - space_after: 段后间距（磅）
+#     - error_message: 错误提示信息
+#   - numbering: 编号检查
+#     - check_continuity: 是否检查连续性
+#     - check_format: 是否检查格式
+#     - format_pattern: 格式正则表达式
+#     - error_message: 错误提示信息
+#   - validation: 验证规则
+#     - check_*: 各种验证开关
+#     - error_message: 错误提示信息
+#   - consistency: 一致性检查
+#     - check_*: 各种一致性检查开关
+#     - error_message: 错误提示信息
