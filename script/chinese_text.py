@@ -42,6 +42,7 @@ def check_chinese_spacing(docx_path):
 
             namespaces = {
                 "w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main",
+                "m": "http://schemas.openxmlformats.org/officeDocument/2006/math",
             }
 
             body = root.find(".//w:body", namespaces)
@@ -73,30 +74,99 @@ def check_chinese_spacing(docx_path):
                     continue
                 
                 # 检查两个中文之间是否只有空格（不能有其他符号）
-                # 匹配模式：中文字符 + 一个或多个空格 + 中文字符（中间不能有其他可见字符）
-                # 需要确保两个中文之间只有空白字符，没有任何其他可见字符（包括标点符号、字母、数字等）
+                # 方法：遍历所有文本元素，检查相邻文本元素之间是否有公式、数学符号等
+                # 如果两个中文字符之间只有空格，但XML结构中有其他元素（如公式），不应该标记为问题
+                
+                # 获取段落中所有的文本元素及其在文本中的位置
+                text_positions = []
+                current_pos = 0
+                for text_elem in text_elements:
+                    if text_elem.text:
+                        text_positions.append({
+                            'element': text_elem,
+                            'start': current_pos,
+                            'end': current_pos + len(text_elem.text),
+                            'text': text_elem.text
+                        })
+                        current_pos += len(text_elem.text)
+                
+                # 检查两个中文之间是否只有空格
                 pattern = r'([\u4e00-\u9fff])(\s+)([\u4e00-\u9fff])'
                 matches = list(re.finditer(pattern, para_text))
                 
                 if matches:
                     for match in matches:
-                        # 获取匹配的完整文本
+                        start_pos = match.start()
+                        end_pos = match.end()
                         full_match = match.group(0)
-                        # 获取两个中文之间的文本
                         between_text = match.group(2)
                         
-                        # 验证：两个中文之间必须只有空白字符（空格、制表符等），不能有其他可见字符
-                        # 如果 between_text.strip() 为空，说明中间只有空白字符，这是我们要找的问题
+                        # 验证：两个中文之间必须只有空白字符
                         if between_text.strip() == '' and len(between_text) > 0:
-                            # 进一步验证：检查匹配的文本段中，两个中文之间是否真的只有空白字符
-                            # 从原始文本中提取匹配位置的文本，确保没有其他字符
-                            start_pos = match.start()
-                            end_pos = match.end()
+                            # 验证匹配的文本确实是"中文+只有空白字符+中文"
                             matched_text = para_text[start_pos:end_pos]
-                            
-                            # 验证匹配的文本确实是"中文+只有空白字符+中文"，没有其他可见字符
                             verify_pattern = r'^[\u4e00-\u9fff]\s+[\u4e00-\u9fff]$'
                             if re.match(verify_pattern, matched_text):
+                                # 关键检查：找到包含这两个中文字符的文本元素
+                                text_elem1 = None
+                                text_elem2 = None
+                                chinese1_pos = start_pos
+                                chinese2_pos = end_pos - 1
+                                
+                                for tp in text_positions:
+                                    if tp['start'] <= chinese1_pos < tp['end']:
+                                        text_elem1 = tp['element']
+                                    if tp['start'] <= chinese2_pos < tp['end']:
+                                        text_elem2 = tp['element']
+                                
+                                # 如果两个中文字符在不同的文本元素中，检查它们之间是否有其他XML元素
+                                if text_elem1 is not None and text_elem2 is not None and text_elem1 != text_elem2:
+                                    # 检查两个文本元素之间是否有公式、数学符号等元素
+                                    # 方法：检查从text_elem1到text_elem2之间的所有元素
+                                    has_other_elements = False
+                                    
+                                    # 获取两个元素的父元素（通常是w:r）
+                                    # 检查它们之间是否有其他w:r元素包含公式等
+                                    all_runs = para.findall(".//w:r", namespaces)
+                                    elem1_run = None
+                                    elem2_run = None
+                                    
+                                    for run in all_runs:
+                                        if text_elem1 in list(run.iter()):
+                                            elem1_run = run
+                                        if text_elem2 in list(run.iter()):
+                                            elem2_run = run
+                                    
+                                    # 如果找到了两个run元素，检查它们之间是否有包含公式的run
+                                    if elem1_run is not None and elem2_run is not None:
+                                        found_elem1 = False
+                                        for run in all_runs:
+                                            if run == elem1_run:
+                                                found_elem1 = True
+                                                continue
+                                            if found_elem1:
+                                                # 检查这个run是否包含公式、数学符号等
+                                                if run.find(".//m:oMath", namespaces) is not None:
+                                                    has_other_elements = True
+                                                    break
+                                                if run.find(".//m:oMathPara", namespaces) is not None:
+                                                    has_other_elements = True
+                                                    break
+                                                # 检查是否有其他非文本内容
+                                                math_ns = "http://schemas.openxmlformats.org/officeDocument/2006/math"
+                                                for elem in run.iter():
+                                                    if math_ns in elem.tag:
+                                                        has_other_elements = True
+                                                        break
+                                                if has_other_elements:
+                                                    break
+                                            if run == elem2_run:
+                                                break
+                                    
+                                    # 如果有其他元素（如公式、数学符号），跳过这个匹配
+                                    if has_other_elements:
+                                        continue
+                                
                                 issues.append({
                                     "paragraph": para_idx,
                                     "page": estimate_page_from_paragraph(para_idx, len(paragraphs)),
