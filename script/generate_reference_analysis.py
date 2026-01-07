@@ -30,11 +30,11 @@ script_dir = Path(__file__).parent
 sys.path.insert(0, str(script_dir))
 
 try:
-    from check_references import check_unreferenced_references
+    from references import check_unreferenced_references
     from config_loader import ConfigLoader
 except ImportError as e:
     print(f"错误: 无法导入必要模块: {e}")
-    print("请确保 check_references.py 和 config_loader.py 在同一目录下")
+    print("请确保 references.py 和 config_loader.py 在同一目录下")
     sys.exit(1)
 
 

@@ -221,6 +221,8 @@ class ConfigLoader:
             "page_numbers",
             "empty_lines",
             "consecutive_empty_lines",
+            "chinese_spacing",
+            "chinese_quotes",
         ]
 
         if not isinstance(checks, list):

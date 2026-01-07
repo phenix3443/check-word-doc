@@ -11,7 +11,7 @@ from figure import check_figure_caption_format
 def main():
     if len(sys.argv) < 2:
         print("Error: Please provide the document path as a command line argument")
-        print("Usage: python3 check_figure_format.py <docx_path>")
+        print("Usage: python3 figure_format.py <docx_path>")
         sys.exit(1)
 
     docx_path = Path(sys.argv[1])

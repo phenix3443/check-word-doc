@@ -11,8 +11,9 @@ import sys
 from pathlib import Path
 
 # 添加脚本目录到路径
-script_dir = Path(__file__).parent
+script_dir = Path(__file__).parent.parent / "script"
 sys.path.insert(0, str(script_dir))
+
 
 def test_with_sample_data():
     """使用示例数据测试脚本"""
@@ -52,7 +53,9 @@ def test_with_sample_data():
         print("2. 分析课题报告...")
         subject_data = analyzer.analyze_subject_reports(subject_reports)
         if subject_data:
-            success_count = len([s for s in subject_data.values() if s.get('status') == 'success'])
+            success_count = len(
+                [s for s in subject_data.values() if s.get("status") == "success"]
+            )
             print(f"   ✓ 课题报告分析成功: {success_count} 个课题")
         else:
             print("   ✗ 课题报告分析失败")
@@ -79,8 +82,10 @@ def test_with_sample_data():
     except Exception as e:
         print(f"测试过程中出错: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 def test_command_line():
     """测试命令行接口"""
@@ -92,7 +97,8 @@ def test_command_line():
     subject_reports = "/Users/liushangliang/github/phenix3443/idea/23年项目/年度报告/2025/课题报告/"
     output_file = "test_cli_reference_analysis.md"
 
-    cmd = f'python generate_reference_analysis.py --main-report "{main_report}" --subject-reports "{subject_reports}" --output "{output_file}" --verbose'
+    script_path = Path(__file__).parent.parent / "script" / "generate_reference_analysis.py"
+    cmd = f'python {script_path} --main-report "{main_report}" --subject-reports "{subject_reports}" --output "{output_file}" --verbose'
 
     print(f"执行命令: {cmd}")
 
@@ -110,6 +116,7 @@ def test_command_line():
     else:
         print(f"✗ 命令行测试失败，返回码: {result}")
         return False
+
 
 def main():
     """主测试函数"""
@@ -135,5 +142,7 @@ def main():
         print("\n❌ 部分测试失败，请检查错误信息。")
         return 1
 
+
 if __name__ == "__main__":
     sys.exit(main())
+

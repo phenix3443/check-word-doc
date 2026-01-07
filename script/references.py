@@ -227,6 +227,52 @@ def extract_references(paragraphs):
     return references
 
 
+def is_likely_array(match_text, context_before, context_after):
+    """
+    判断是否可能是数组而不是文献引用。
+
+    数组的特征：
+    1. 数字很大（如 > 100），不太可能是文献编号
+    2. 前面有变量名、等号、赋值符号
+    3. 后面有数组相关操作符或变量
+    4. 数字之间有明显的范围关系（如 [0, 500]）
+    """
+    # 提取所有数字
+    numbers = [int(x) for x in re.findall(r"\d+", match_text)]
+
+    # 如果数字很大（> 200），很可能是数组
+    if any(num > 200 for num in numbers):
+        return True
+
+    # 检查上下文，如果前面有变量名、等号、赋值等，可能是数组
+    context = (context_before + match_text + context_after).lower()
+
+    # 数组常见模式
+    array_patterns = [
+        r"[a-z_]\s*=\s*\[",  # 变量 = [
+        r"\[.*\]\s*=",  # [xxx] =
+        r"片段\s*\[",  # 片段 [
+        r"分段\s*\[",  # 分段 [
+        r"范围\s*\[",  # 范围 [
+        r"状态\s*\[",  # 状态 [
+        r"d\s*=\s*\[",  # d = [
+        r"验证\s*\[",  # 验证 [
+        r"计算\s*\[",  # 计算 [
+    ]
+
+    for pattern in array_patterns:
+        if re.search(pattern, context):
+            return True
+
+    # 如果数字是连续的范围且较大，可能是数组
+    if len(numbers) >= 2:
+        # 检查是否是范围（如 [0, 500]）
+        if numbers[-1] - numbers[0] > 50:
+            return True
+
+    return False
+
+
 def extract_citations(paragraphs):
     """Extract all citation numbers from document body."""
     citations = set()
@@ -258,32 +304,99 @@ def extract_citations(paragraphs):
             else:
                 continue
 
-        matches = re.findall(r"\[(\d+)\]", para)
+        # 单个引用 [1]
+        matches = re.finditer(r"\[(\d+)\]", para)
         for match in matches:
-            citations.add(int(match))
+            num = int(match.group(1))
+            # 如果数字太大，可能是数组索引
+            if num <= 200:  # 假设文献编号不会超过200
+                start_pos = match.start()
+                end_pos = match.end()
+                context_before = para[max(0, start_pos - 20) : start_pos]
+                context_after = para[end_pos : min(len(para), end_pos + 20)]
+                if not is_likely_array(match.group(0), context_before, context_after):
+                    citations.add(num)
 
-        matches = re.findall(r"\[(\d+)-(\d+)\]", para)
-        for start, end in matches:
-            start_num, end_num = int(start), int(end)
-            citations.update(range(start_num, end_num + 1))
+        # 范围引用 [1-5]
+        matches = re.finditer(r"\[(\d+)-(\d+)\]", para)
+        for match in matches:
+            start_num, end_num = int(match.group(1)), int(match.group(2))
+            # 如果范围太大，可能是数组
+            if start_num <= 200 and end_num <= 200 and end_num - start_num <= 50:
+                start_pos = match.start()
+                end_pos = match.end()
+                context_before = para[max(0, start_pos - 20) : start_pos]
+                context_after = para[end_pos : min(len(para), end_pos + 20)]
+                if not is_likely_array(match.group(0), context_before, context_after):
+                    citations.update(range(start_num, end_num + 1))
 
-        matches = re.findall(r"\[(\d+),\s*(\d+)\]", para)
-        for m1, m2 in matches:
-            citations.add(int(m1))
-            citations.add(int(m2))
+        # 多个引用 [1, 3] - 需要更严格的判断
+        matches = re.finditer(r"\[(\d+),\s*(\d+)\]", para)
+        for match in matches:
+            m1, m2 = int(match.group(1)), int(match.group(2))
+            start_pos = match.start()
+            end_pos = match.end()
+            context_before = para[max(0, start_pos - 20) : start_pos]
+            context_after = para[end_pos : min(len(para), end_pos + 20)]
 
-        matches = re.findall(r"\[(\d+),\s*(\d+),\s*(\d+)\]", para)
-        for m1, m2, m3 in matches:
-            citations.add(int(m1))
-            citations.add(int(m2))
-            citations.add(int(m3))
+            # 如果看起来像数组，跳过
+            if is_likely_array(match.group(0), context_before, context_after):
+                continue
 
-        matches = re.findall(r"\[(\d+),\s*(\d+),\s*(\d+),\s*(\d+)\]", para)
-        for m1, m2, m3, m4 in matches:
-            citations.add(int(m1))
-            citations.add(int(m2))
-            citations.add(int(m3))
-            citations.add(int(m4))
+            # 如果数字太大，跳过
+            if m1 > 200 or m2 > 200:
+                continue
+
+            citations.add(m1)
+            citations.add(m2)
+
+        # 三个引用 [1, 3, 5] - 需要更严格的判断
+        matches = re.finditer(r"\[(\d+),\s*(\d+),\s*(\d+)\]", para)
+        for match in matches:
+            m1, m2, m3 = int(match.group(1)), int(match.group(2)), int(match.group(3))
+            start_pos = match.start()
+            end_pos = match.end()
+            context_before = para[max(0, start_pos - 20) : start_pos]
+            context_after = para[end_pos : min(len(para), end_pos + 20)]
+
+            # 如果看起来像数组，跳过
+            if is_likely_array(match.group(0), context_before, context_after):
+                continue
+
+            # 如果数字太大，跳过
+            if m1 > 200 or m2 > 200 or m3 > 200:
+                continue
+
+            citations.add(m1)
+            citations.add(m2)
+            citations.add(m3)
+
+        # 四个引用 [1, 3, 5, 7] - 需要更严格的判断
+        matches = re.finditer(r"\[(\d+),\s*(\d+),\s*(\d+),\s*(\d+)\]", para)
+        for match in matches:
+            m1, m2, m3, m4 = (
+                int(match.group(1)),
+                int(match.group(2)),
+                int(match.group(3)),
+                int(match.group(4)),
+            )
+            start_pos = match.start()
+            end_pos = match.end()
+            context_before = para[max(0, start_pos - 20) : start_pos]
+            context_after = para[end_pos : min(len(para), end_pos + 20)]
+
+            # 如果看起来像数组，跳过
+            if is_likely_array(match.group(0), context_before, context_after):
+                continue
+
+            # 如果数字太大，跳过
+            if m1 > 200 or m2 > 200 or m3 > 200 or m4 > 200:
+                continue
+
+            citations.add(m1)
+            citations.add(m2)
+            citations.add(m3)
+            citations.add(m4)
 
     return citations
 
@@ -410,6 +523,26 @@ def check_citation_superscript_format(docx_path):
                         start_pos = match.start()
                         end_pos = match.end()
                         citation_text = match.group(0)
+
+                        # 检查是否是数组而不是引用
+                        context_before = para_text[max(0, start_pos - 20) : start_pos]
+                        context_after = para_text[
+                            end_pos : min(len(para_text), end_pos + 20)
+                        ]
+
+                        # 使用与 extract_citations 相同的判断逻辑
+                        if is_likely_array(
+                            citation_text, context_before, context_after
+                        ):
+                            continue
+
+                        # 对于逗号分隔的格式，检查数字是否太大
+                        if pattern_type in ["comma", "comma3", "comma4"]:
+                            numbers = [
+                                int(x) for x in re.findall(r"\d+", citation_text)
+                            ]
+                            if any(num > 200 for num in numbers):
+                                continue
 
                         citation_is_superscript = False
                         citation_fully_covered = False
@@ -771,6 +904,7 @@ def find_citation_suggestions(unreferenced_refs, references, paragraphs, ref_sta
                     else:
                         keyword_count += 1
 
+            # Special handling for specific reference numbers (legacy code)
             if ref_num == 108:
                 if "组合" in para and (
                     "语义" in para or "规则" in para or "机制" in para or "操作" in para
@@ -963,7 +1097,9 @@ def get_paragraph_alignment(para, namespaces):
     return "left"  # Default alignment
 
 
-def check_references_heading_level(docx_path, heading_text="参考文献", heading_alignment=None):
+def check_references_heading_level(
+    docx_path, heading_text="参考文献", heading_alignment=None
+):
     """
     Check if there exists a level 1 heading with the specified text and alignment.
 
@@ -1084,7 +1220,7 @@ def check_references_heading_level(docx_path, heading_text="参考文献", headi
 def check_unreferenced_references(docx_path, config=None):
     """
     Check which references are not cited.
-    
+
     Args:
         docx_path: Path to Word document
         config: Optional configuration dictionary. If not provided, will try to load from environment variable.
@@ -1139,21 +1275,17 @@ def check_unreferenced_references(docx_path, config=None):
     if ref_start_idx < 0:
         ref_start_idx = len(paragraphs)
 
-    print("Finding citation suggestions for unreferenced references...")
-    suggestions = find_citation_suggestions(
-        unreferenced, references, paragraphs, ref_start_idx
-    )
-    print(f"Found suggestions for {len(suggestions)} unreferenced references")
-
     # Check if "参考文献" is under a level 1 heading
     heading_check = None
     try:
         # If config not provided, try to load from environment variable (for backward compatibility)
         if config is None:
             import os
-            config_path = os.environ.get('CUSTOM_CONFIG_PATH')
+
+            config_path = os.environ.get("CUSTOM_CONFIG_PATH")
             if config_path:
                 from config_loader import ConfigLoader
+
                 config_loader = ConfigLoader(config_path)
                 config = config_loader.load()
 
@@ -1177,13 +1309,19 @@ def check_unreferenced_references(docx_path, config=None):
                 if heading_alignment:
                     print(f"  Expected alignment: {heading_alignment}")
                 heading_check = check_references_heading_level(
-                    docx_path, heading_text=heading_text, heading_alignment=heading_alignment
+                    docx_path,
+                    heading_text=heading_text,
+                    heading_alignment=heading_alignment,
                 )
                 if heading_check.get("is_level1"):
                     if heading_check.get("alignment_ok", True):
-                        print(f"✓ '{heading_text}' is correctly under a level 1 heading")
+                        print(
+                            f"✓ '{heading_text}' is correctly under a level 1 heading"
+                        )
                     else:
-                        print(f"⚠ '{heading_text}' heading level check: {heading_check.get('message', 'N/A')}")
+                        print(
+                            f"⚠ '{heading_text}' heading level check: {heading_check.get('message', 'N/A')}"
+                        )
                 else:
                     print(
                         f"⚠ '{heading_text}' heading level check: {heading_check.get('message', 'N/A')}"
@@ -1202,7 +1340,6 @@ def check_unreferenced_references(docx_path, config=None):
         "unreferenced": unreferenced,
         "all_reference_numbers": all_ref_numbers,
         "duplicates": duplicates,
-        "suggestions": suggestions,
         "heading_check": heading_check,
     }
 
@@ -1247,6 +1384,19 @@ def generate_report(docx_path, result, superscript_check=None):
             md_content.append("- **引用格式**: ✅ 所有引用均为上标格式")
     md_content.append("")
 
+    # 判断是否所有检查都通过
+    all_passed = (
+        len(result["unreferenced"]) == 0
+        and len(result.get("duplicates", [])) == 0
+        and (not superscript_check or not superscript_check["found"])
+        and (not heading_check or heading_check.get("is_level1", False))
+    )
+
+    # 如果所有检查都通过，只显示概览，不显示详细结果
+    if all_passed:
+        md_content.append("\n*报告由参考文献检查脚本自动生成*\n")
+        return "\n".join(md_content)
+
     if result["unreferenced"]:
         md_content.append("## 未被引用的参考文献\n")
         md_content.append(
@@ -1263,25 +1413,8 @@ def generate_report(docx_path, result, superscript_check=None):
                 ref_text = (
                     ref["text"][:100] + "..." if len(ref["text"]) > 100 else ref["text"]
                 )
-                md_content.append(f"| [{ref_num}] | {ref_text} |")
+                md_content.append(f"| {ref_num} | {ref_text} |")
 
-        md_content.append("\n### 详细内容\n")
-        suggestions = result.get("suggestions", {})
-        for ref_num in result["unreferenced"]:
-            ref = next(
-                (r for r in result["references"] if r["number"] == ref_num), None
-            )
-            if ref:
-                md_content.append(f"\n#### [{ref_num}]\n")
-                md_content.append(f"{ref['full_text']}\n")
-
-                if ref_num in suggestions:
-                    md_content.append("\n**建议引用位置**:\n")
-                    for idx, match in enumerate(suggestions[ref_num], 1):
-                        md_content.append(
-                            f"{idx}. 段落 {match['paragraph']}: {match['text']}...\n"
-                        )
-                    md_content.append("")
     else:
         md_content.append("\n## ✅ 检查结果\n")
         md_content.append("**所有参考文献均已被引用！**\n")
@@ -1308,17 +1441,18 @@ def generate_report(docx_path, result, superscript_check=None):
     if duplicates:
         md_content.append(f"共发现 **{len(duplicates)}** 组完全相同的重复参考文献：\n")
         for idx, (ref1, ref2) in enumerate(duplicates, 1):
-            md_content.append(f"### 重复组 {idx}\n")
-            md_content.append(f"**参考文献 [{ref1['number']}]**:\n")
-            md_content.append(f"{ref1['full_text']}\n")
-            md_content.append(f"**参考文献 [{ref2['number']}]**:\n")
-            md_content.append(f"{ref2['full_text']}\n")
-            md_content.append("---\n")
+            md_content.append(f"\n### 重复组 {idx}\n\n")
+            md_content.append("| 文献编号 | 参考文献内容 |\n")
+            md_content.append("|---------|-------------|\n")
+            ref1_text = ref1.get("full_text", ref1.get("text", ""))
+            ref2_text = ref2.get("full_text", ref2.get("text", ""))
+            md_content.append(f"| {ref1.get('number', 'N/A')} | {ref1_text} |\n")
+            md_content.append(f"| {ref2.get('number', 'N/A')} | {ref2_text} |\n")
     else:
         md_content.append("✅ **未发现重复的参考文献！**\n")
 
     if superscript_check:
-        md_content.append("\n---\n")
+        md_content.append("---\n")
         md_content.append("\n## 引用格式检查（上标）\n")
         if superscript_check["found"]:
             md_content.append("❌ **状态**: 发现问题\n")
@@ -1339,13 +1473,11 @@ def generate_report(docx_path, result, superscript_check=None):
                     )
         else:
             md_content.append("✅ **状态**: 通过\n")
-            md_content.append(f"**结果**: {superscript_check['message']}\n")
-
-    md_content.append("\n---\n")
 
     # Add heading level check section
     heading_check = result.get("heading_check", {})
     if heading_check:
+        md_content.append("\n---\n")
         md_content.append("\n## 参考文献标题级别检查\n")
         if heading_check.get("is_level1"):
             md_content.append("✅ **状态**: 通过\n")
@@ -1358,7 +1490,7 @@ def generate_report(docx_path, result, superscript_check=None):
             md_content.append("❌ **状态**: 不符合要求\n")
             actual_level = heading_check.get("actual_level", "未知")
             style_name = heading_check.get("style_name", "无")
-            md_content.append(f"**结果**: '参考文献'标题不是一级标题\n")
+            md_content.append("**结果**: '参考文献'标题不是一级标题\n")
             md_content.append(f"**当前级别**: {actual_level}\n")
             if style_name:
                 md_content.append(f"**段落样式**: {style_name}\n")
@@ -1372,7 +1504,7 @@ def generate_report(docx_path, result, superscript_check=None):
         md_content.append("")
 
     md_content.append("\n---\n")
-    md_content.append("\n*报告由参考文献检查脚本自动生成*\n")
+    md_content.append("*报告由参考文献检查脚本自动生成*\n")
 
     return "\n".join(md_content)
 

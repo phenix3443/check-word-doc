@@ -6,6 +6,10 @@ Test script for configuration loader.
 import sys
 from pathlib import Path
 
+# Add script directory to path
+script_dir = Path(__file__).parent.parent / "script"
+sys.path.insert(0, str(script_dir))
+
 try:
     from config_loader import ConfigLoader, ConfigError, load_config
 except ImportError as e:
@@ -16,8 +20,8 @@ except ImportError as e:
 
 def get_example_config_path():
     """Get path to example configuration file."""
-    script_dir = Path(__file__).parent
-    project_root = script_dir.parent
+    test_dir = Path(__file__).parent
+    project_root = test_dir.parent
     return project_root / "config" / "example.yaml"
 
 
@@ -273,3 +277,4 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
+

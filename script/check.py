@@ -8,7 +8,7 @@ import sys
 import argparse
 
 from structure import analyze_document_structure
-from check_functions import (
+from functions import (
     run_cover_check,
     run_toc_check,
     run_figure_list_check,
@@ -20,6 +20,8 @@ from check_functions import (
     run_captions_check,
     run_references_check,
     run_page_numbers_check,
+    run_chinese_spacing_check,
+    run_chinese_quotes_check,
 )
 from report import generate_markdown_report
 from config_loader import ConfigLoader
@@ -72,6 +74,8 @@ Examples:
             "captions",
             "references",
             "page_numbers",
+            "chinese_spacing",
+            "chinese_quotes",
         ],
         help="Specific check item to run (can be specified multiple times)",
     )
@@ -114,6 +118,8 @@ def list_available_checks():
         "figures": "Check figure empty lines",
         "captions": "Check caption alignment",
         "references": "Check references format and citations",
+        "chinese_spacing": "Check Chinese spacing (no spaces between Chinese characters)",
+        "chinese_quotes": "Check Chinese quotes format",
     }
 
     print("Available check items:")
@@ -167,6 +173,8 @@ def main():
             "captions",
             "references",
             "page_numbers",
+            "chinese_spacing",
+            "chinese_quotes",
         ]
 
     print("=" * 80)
@@ -232,7 +240,7 @@ def main():
 
     if "empty_lines" in checks_to_run:
         print(f"{step}. ", end="")
-        results["empty_lines"] = run_empty_lines_check(docx_path)
+        results["empty_lines"] = run_empty_lines_check(docx_path, config_loader)
         step += 1
         print()
 
@@ -257,6 +265,18 @@ def main():
     if "page_numbers" in checks_to_run:
         print(f"{step}. ", end="")
         results["page_numbers"] = run_page_numbers_check(docx_path, config_loader)
+        step += 1
+        print()
+
+    if "chinese_spacing" in checks_to_run:
+        print(f"{step}. ", end="")
+        results["chinese_spacing"] = run_chinese_spacing_check(docx_path, config_loader)
+        step += 1
+        print()
+
+    if "chinese_quotes" in checks_to_run:
+        print(f"{step}. ", end="")
+        results["chinese_quotes"] = run_chinese_quotes_check(docx_path, config_loader)
         step += 1
         print()
 
@@ -308,6 +328,10 @@ def main():
             print(f"Caption alignment: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}")
         elif check_name == "references":
             print(f"References check: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}")
+        elif check_name == "chinese_spacing":
+            print(f"Chinese spacing: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}")
+        elif check_name == "chinese_quotes":
+            print(f"Chinese quotes: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}")
 
     issues = []
     for check_name in checks_to_run:
@@ -366,6 +390,10 @@ def main():
             issues.append(f"Caption alignment: {check_result.get('message', 'N/A')}")
         elif check_name == "references" and check_result.get("found"):
             issues.append(f"References: {check_result.get('message', 'N/A')}")
+        elif check_name == "chinese_spacing" and check_result.get("found"):
+            issues.append(f"Chinese spacing: {check_result.get('message', 'N/A')}")
+        elif check_name == "chinese_quotes" and check_result.get("found"):
+            issues.append(f"Chinese quotes: {check_result.get('message', 'N/A')}")
 
     if issues:
         print()
@@ -388,7 +416,7 @@ def main():
             footers = footers_result.get("footers", []) if footers_result else []
             consistency = headers_result.get("consistency", {}) if headers_result else {}
             footer_consistency = footers_result.get("consistency", {}) if footers_result else {}
-            
+
             # Ensure structure has required keys
             if structure is None:
                 structure = {'headers': [], 'footers': []}
@@ -408,6 +436,9 @@ def main():
                 results.get("figures", {}),
                 results.get("captions", {}),
                 results.get("references", {}),
+                results.get("chinese_spacing", {}),
+                results.get("chinese_quotes", {}),
+                checks_to_run=checks_to_run,
             )
 
             report_path = docx_path.parent / f"{docx_path.stem}_格式检查报告.md"

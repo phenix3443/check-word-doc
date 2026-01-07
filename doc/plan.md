@@ -194,7 +194,7 @@
 check-word-doc/
 ├── script/              # 检查脚本目录
 │   ├── check_document_format.py    # 文档格式检查脚本（现有）
-│   ├── check_references.py         # 参考文献检查脚本（现有）
+│   ├── references.py               # 参考文献检查脚本（现有）
 │   └── ...                         # 其他检查脚本
 ├── report/             # 检查报告输出目录
 │   └── ...                         # 生成的检查报告文件

@@ -17,6 +17,7 @@ from header_footer import (
 from empty_lines import check_consecutive_empty_lines
 from figure import check_figure_empty_lines, check_caption_alignment
 from page_numbers import check_page_numbers
+from chinese_text import check_chinese_spacing, check_chinese_quotes
 
 
 def _is_check_enabled(config_loader, check_name, item_config):
@@ -46,7 +47,7 @@ def _is_check_enabled(config_loader, check_name, item_config):
     return True
 
 
-from check_references import check_unreferenced_references
+from references import check_unreferenced_references
 
 
 def run_cover_check(docx_path):
@@ -651,11 +652,16 @@ def run_footers_check(docx_path, usage_info=None):
     return {"footers": footers, "consistency": footer_consistency}
 
 
-def run_empty_lines_check(docx_path):
+def run_empty_lines_check(docx_path, config_loader=None):
     """Run empty lines check."""
     print("Checking for consecutive empty lines...")
     try:
-        config_loader = ConfigLoader()
+        if config_loader is None:
+            import os
+            config_path = os.environ.get('CUSTOM_CONFIG_PATH')
+            if not config_path:
+                raise ValueError("Configuration file path is required. Please specify a config file using --config option.")
+            config_loader = ConfigLoader(config_path)
         config = config_loader.load()
         empty_lines_config = config.get("empty_lines", {})
         
@@ -690,12 +696,12 @@ def run_empty_lines_check(docx_path):
 
     if empty_lines_check["found"]:
         print()
-        print("   WARNING: Consecutive empty lines found!")
+        print("   警告：发现连续空行！")
         if empty_lines_check["details"]:
             details = empty_lines_check["details"]
-            print(f"   Found {len(details)} group(s) of consecutive empty lines")
+            print(f"   发现 {len(details)} 组连续空行")
             if len(details) > 20:
-                print("   First 10 locations:")
+                print("   前 10 个位置：")
                 for detail in details[:10]:
                     page_info = ""
                     if (
@@ -706,15 +712,15 @@ def run_empty_lines_check(docx_path):
                             detail["estimated_start_page"]
                             == detail["estimated_end_page"]
                         ):
-                            page_info = f" (Page ~{detail['estimated_start_page']})"
+                            page_info = f" (第 ~{detail['estimated_start_page']} 页)"
                         else:
-                            page_info = f" (Pages ~{detail['estimated_start_page']}-{detail['estimated_end_page']})"
+                            page_info = f" (第 ~{detail['estimated_start_page']}-{detail['estimated_end_page']} 页)"
                     print(
-                        f"      - Paragraphs {detail['start']} to {detail['end']}: {detail['count']} consecutive empty lines{page_info}"
+                        f"      - 段落 {detail['start']} 到 {detail['end']}：{detail['count']} 个连续空行{page_info}"
                     )
                 print("   ...")
             else:
-                print("   Locations:")
+                print("   位置：")
                 for detail in details:
                     page_info = ""
                     if (
@@ -725,14 +731,14 @@ def run_empty_lines_check(docx_path):
                             detail["estimated_start_page"]
                             == detail["estimated_end_page"]
                         ):
-                            page_info = f" (Page ~{detail['estimated_start_page']})"
+                            page_info = f" (第 ~{detail['estimated_start_page']} 页)"
                         else:
-                            page_info = f" (Pages ~{detail['estimated_start_page']}-{detail['estimated_end_page']})"
+                            page_info = f" (第 ~{detail['estimated_start_page']}-{detail['estimated_end_page']} 页)"
                     print(
-                        f"      - Paragraphs {detail['start']} to {detail['end']}: {detail['count']} consecutive empty lines{page_info}"
+                        f"      - 段落 {detail['start']} 到 {detail['end']}：{detail['count']} 个连续空行{page_info}"
                     )
     else:
-        print("   ✓ No consecutive empty lines found")
+        print("   ✓ 未发现连续空行")
 
     if "total_paragraphs" in empty_lines_check:
         print(
@@ -945,9 +951,19 @@ def run_references_check(docx_path, config_loader=None):
                 print("   ✓ All references are properly cited and unique")
 
             # Convert to standard format
+            if issues_found:
+                if unreferenced > 0 and duplicates > 0:
+                    message = f"发现 {unreferenced} 个未被引用的参考文献和 {duplicates} 组重复的参考文献"
+                elif unreferenced > 0:
+                    message = f"发现 {unreferenced} 个未被引用的参考文献"
+                else:
+                    message = f"发现 {duplicates} 组重复的参考文献"
+            else:
+                message = "所有参考文献均已被正确引用且唯一"
+            
             return {
                 "found": issues_found,
-                "message": f"Found {unreferenced} unreferenced and {duplicates} duplicate references" if issues_found else "All references are properly cited and unique",
+                "message": message,
                 "details": references_check,
                 "total_references": total_refs,
                 "cited_references": cited_refs,
@@ -967,4 +983,159 @@ def run_references_check(docx_path, config_loader=None):
             "details": {},
             "error": True
         }
+
+
+def run_chinese_spacing_check(docx_path, config_loader=None):
+    """Run Chinese spacing check."""
+    print("Checking Chinese spacing...")
+    try:
+        if config_loader is None:
+            config_loader = ConfigLoader()
+        config = config_loader.config
+        chinese_spacing_config = config.get("chinese_spacing", {})
+        
+        # Check if check is enabled (with priority control)
+        if not _is_check_enabled(config_loader, "chinese_spacing", chinese_spacing_config):
+            spacing_check = {
+                "found": False,
+                "message": "Chinese spacing check is disabled",
+                "details": [],
+            }
+            print(f"   Result: {spacing_check['message']}")
+            return spacing_check
+        
+        if chinese_spacing_config.get("enabled", True):
+            spacing_check = check_chinese_spacing(docx_path)
+            print(f"   Result: {spacing_check['message']}")
+            
+            if spacing_check["found"]:
+                print()
+                print("   WARNING: Chinese spacing issues found!")
+                if spacing_check["details"]:
+                    details = spacing_check["details"]
+                    print(f"   Found {len(details)} issue(s)")
+                    if len(details) > 20:
+                        print("   First 10 locations:")
+                        for detail in details[:10]:
+                            print(
+                                f"      - Paragraph {detail['paragraph']} (Page ~{detail['page']}): {detail['text']}"
+                            )
+                        print("   ...")
+                    else:
+                        print("   Locations:")
+                        for detail in details:
+                            print(
+                                f"      - Paragraph {detail['paragraph']} (Page ~{detail['page']}): {detail['text']}"
+                            )
+            else:
+                print("   ✓ No Chinese spacing issues found")
+        else:
+            spacing_check = {
+                "found": False,
+                "message": "Chinese spacing check is disabled",
+                "details": [],
+            }
+            print(f"   Result: {spacing_check['message']}")
+    except Exception as e:
+        print(f"   Error loading Chinese spacing config: {e}")
+        spacing_check = {"found": False, "message": f"Error: {e}", "details": []}
+
+    return spacing_check
+
+
+def run_chinese_quotes_check(docx_path, config_loader=None):
+    """Run Chinese quotes check."""
+    print("Checking Chinese quotes...")
+    try:
+        if config_loader is None:
+            config_loader = ConfigLoader()
+        config = config_loader.config
+        chinese_quotes_config = config.get("chinese_quotes", {})
+        
+        # Check if check is enabled (with priority control)
+        if not _is_check_enabled(config_loader, "chinese_quotes", chinese_quotes_config):
+            quotes_check = {
+                "found": False,
+                "message": "Chinese quotes check is disabled",
+                "details": {
+                    "english_quotes": [],
+                    "quote_matching": []
+                },
+            }
+            print(f"   Result: {quotes_check['message']}")
+            return quotes_check
+        
+        if chinese_quotes_config.get("enabled", True):
+            check_english_quotes = chinese_quotes_config.get("check_english_quotes", True)
+            check_quote_matching = chinese_quotes_config.get("check_quote_matching", True)
+            
+            quotes_check = check_chinese_quotes(
+                docx_path,
+                check_english_quotes=check_english_quotes,
+                check_quote_matching=check_quote_matching
+            )
+            print(f"   Result: {quotes_check['message']}")
+            
+            if quotes_check["found"]:
+                print()
+                print("   WARNING: Chinese quotes issues found!")
+                details = quotes_check.get("details", {})
+                english_quotes = details.get("english_quotes", [])
+                quote_matching = details.get("quote_matching", [])
+                
+                if english_quotes:
+                    print(f"   Found {len(english_quotes)} English quote issue(s)")
+                    if len(english_quotes) > 20:
+                        print("   First 10 locations:")
+                        for detail in english_quotes[:10]:
+                            print(
+                                f"      - Paragraph {detail['paragraph']} (Page ~{detail['page']}): {detail['type']} - {detail['text']}"
+                            )
+                        print("   ...")
+                    else:
+                        print("   Locations:")
+                        for detail in english_quotes:
+                            print(
+                                f"      - Paragraph {detail['paragraph']} (Page ~{detail['page']}): {detail['type']} - {detail['text']}"
+                            )
+                
+                if quote_matching:
+                    print(f"   Found {len(quote_matching)} quote matching issue(s)")
+                    if len(quote_matching) > 20:
+                        print("   First 10 locations:")
+                        for detail in quote_matching[:10]:
+                            print(
+                                f"      - Paragraph {detail['paragraph']} (Page ~{detail['page']}): {detail['quote_type']} (左: {detail['left_count']}, 右: {detail['right_count']})"
+                            )
+                        print("   ...")
+                    else:
+                        print("   Locations:")
+                        for detail in quote_matching:
+                            print(
+                                f"      - Paragraph {detail['paragraph']} (Page ~{detail['page']}): {detail['quote_type']} (左: {detail['left_count']}, 右: {detail['right_count']})"
+                            )
+            else:
+                print("   ✓ No Chinese quotes issues found")
+        else:
+            quotes_check = {
+                "found": False,
+                "message": "Chinese quotes check is disabled",
+                "details": {
+                    "english_quotes": [],
+                    "quote_matching": []
+                },
+            }
+            print(f"   Result: {quotes_check['message']}")
+    except Exception as e:
+        print(f"   Error loading Chinese quotes config: {e}")
+        quotes_check = {
+            "found": False,
+            "message": f"Error: {e}",
+            "details": {
+                "english_quotes": [],
+                "quote_matching": []
+            }
+        }
+
+    return quotes_check
 

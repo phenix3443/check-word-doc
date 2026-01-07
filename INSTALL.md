@@ -43,7 +43,7 @@ poetry shell
 或者在不激活虚拟环境的情况下运行命令：
 
 ```bash
-poetry run python script/test_config_loader.py
+poetry run python test/config_loader.py
 ```
 
 ## 项目依赖
@@ -75,14 +75,14 @@ poetry update
 运行测试脚本验证配置加载模块：
 
 ```bash
-poetry run python script/test_config_loader.py
+poetry run python test/config_loader.py
 ```
 
 或者先激活虚拟环境：
 
 ```bash
 poetry shell
-python script/test_config_loader.py
+python test/config_loader.py
 ```
 
 如果所有测试通过，说明安装成功。
