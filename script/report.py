@@ -6,7 +6,7 @@ Report generation functions.
 from datetime import datetime
 
 
-def generate_markdown_report(docx_path, structure, headers, footers, header_consistency, footer_consistency, empty_lines_check, figure_check, caption_check):
+def generate_markdown_report(docx_path, structure, headers, footers, header_consistency, footer_consistency, empty_lines_check, figure_check, caption_check, references_check=None):
     """Generate a markdown report of the document format check."""
     docx_name = docx_path.name
     timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -41,16 +41,20 @@ def generate_markdown_report(docx_path, structure, headers, footers, header_cons
         md_content.append("未发现页眉内容。\n")
 
     md_content.append("\n### 2.2 页眉一致性检查\n")
-    if header_consistency['consistent']:
-        md_content.append("✅ **状态**: 通过\n")
-        md_content.append(f"**结果**: {header_consistency['message']}\n")
+    if header_consistency and 'consistent' in header_consistency:
+        if header_consistency['consistent']:
+            md_content.append("✅ **状态**: 通过\n")
+            md_content.append(f"**结果**: {header_consistency['message']}\n")
+        else:
+            md_content.append("❌ **状态**: 失败\n")
+            md_content.append(f"**结果**: {header_consistency['message']}\n")
+            if 'variations' in header_consistency:
+                md_content.append("\n**页眉变化情况**:\n")
+                for header_text, count in header_consistency['variations'].items():
+                    md_content.append(f"- `{header_text}` (出现 {count} 次)")
     else:
-        md_content.append("❌ **状态**: 失败\n")
-        md_content.append(f"**结果**: {header_consistency['message']}\n")
-        if 'variations' in header_consistency:
-            md_content.append("\n**页眉变化情况**:\n")
-            for header_text, count in header_consistency['variations'].items():
-                md_content.append(f"- `{header_text}` (出现 {count} 次)")
+        md_content.append("⚠️ **状态**: 未检查\n")
+        md_content.append("**结果**: 本次检查未包含页眉一致性检查\n")
 
     md_content.append("\n## 3. 页脚检查\n")
     md_content.append("### 3.1 页脚内容详情\n")
@@ -72,110 +76,251 @@ def generate_markdown_report(docx_path, structure, headers, footers, header_cons
         md_content.append("未发现页脚内容。\n")
 
     md_content.append("\n### 3.2 页脚一致性检查\n")
-    if footer_consistency['consistent']:
-        md_content.append("✅ **状态**: 通过\n")
-        md_content.append(f"**结果**: {footer_consistency['message']}\n")
+    if footer_consistency and 'consistent' in footer_consistency:
+        if footer_consistency['consistent']:
+            md_content.append("✅ **状态**: 通过\n")
+            md_content.append(f"**结果**: {footer_consistency['message']}\n")
+        else:
+            md_content.append("❌ **状态**: 失败\n")
+            md_content.append(f"**结果**: {footer_consistency['message']}\n")
+            if 'variations' in footer_consistency:
+                md_content.append("\n**页脚变化情况**:\n")
+                for footer_text, count in footer_consistency['variations'].items():
+                    md_content.append(f"- `{footer_text}` (出现 {count} 次)")
     else:
-        md_content.append("❌ **状态**: 失败\n")
-        md_content.append(f"**结果**: {footer_consistency['message']}\n")
-        if 'variations' in footer_consistency:
-            md_content.append("\n**页脚变化情况**:\n")
-            for footer_text, count in footer_consistency['variations'].items():
-                md_content.append(f"- `{footer_text}` (出现 {count} 次)")
+        md_content.append("⚠️ **状态**: 未检查\n")
+        md_content.append("**结果**: 本次检查未包含页脚一致性检查\n")
 
     md_content.append("\n## 4. 连续空行检查\n")
-    if empty_lines_check['found']:
-        md_content.append("❌ **状态**: 发现问题\n")
-        md_content.append(f"**结果**: {empty_lines_check['message']}\n")
-        if 'total_paragraphs' in empty_lines_check:
-            md_content.append(f"**文档总段落数**: {empty_lines_check['total_paragraphs']}\n")
-        if empty_lines_check['details']:
-            md_content.append("\n**连续空行位置**:\n")
-            md_content.append("| 序号 | 段落范围 | 空行数 | 页码 | 上下文 |")
-            md_content.append("|------|----------|--------|------|--------|")
+    if empty_lines_check and 'found' in empty_lines_check:
+        if empty_lines_check['found']:
+            md_content.append("❌ **状态**: 发现问题\n")
+            md_content.append(f"**结果**: {empty_lines_check['message']}\n")
+            if 'total_paragraphs' in empty_lines_check:
+                md_content.append(f"**文档总段落数**: {empty_lines_check['total_paragraphs']}\n")
+            if empty_lines_check['details']:
+                md_content.append("\n**连续空行位置**:\n")
+                md_content.append("| 序号 | 段落范围 | 空行数 | 页码 | 上下文 |")
+                md_content.append("|------|----------|--------|------|--------|")
 
-            for idx, detail in enumerate(empty_lines_check['details'], 1):
-                para_range = f"{detail['start']}-{detail['end']}"
-                count = detail['count']
+                for idx, detail in enumerate(empty_lines_check['details'], 1):
+                    para_range = f"{detail['start']}-{detail['end']}"
+                    count = detail['count']
 
-                page_info = ""
-                if 'estimated_start_page' in detail and 'estimated_end_page' in detail:
-                    if detail['estimated_start_page'] == detail['estimated_end_page']:
-                        page_info = f"第 {detail['estimated_start_page']} 页"
+                    page_info = ""
+                    if 'estimated_start_page' in detail and 'estimated_end_page' in detail:
+                        if detail['estimated_start_page'] == detail['estimated_end_page']:
+                            page_info = f"第 {detail['estimated_start_page']} 页"
+                        else:
+                            page_info = f"第 {detail['estimated_start_page']}-{detail['estimated_end_page']} 页"
                     else:
-                        page_info = f"第 {detail['estimated_start_page']}-{detail['estimated_end_page']} 页"
-                else:
-                    page_info = "-"
+                        page_info = "-"
 
-                context_parts = []
-                if detail.get('context_before'):
-                    before_text = '; '.join(detail['context_before'])
-                    if before_text:
-                        before_short = before_text[:17] + '...' if len(before_text) > 17 else before_text
-                        context_parts.append(f"前: {before_short}")
-                if detail.get('context_after'):
-                    after_text = '; '.join(detail['context_after'])
-                    if after_text:
-                        after_short = after_text[:17] + '...' if len(after_text) > 17 else after_text
-                        context_parts.append(f"后: {after_short}")
+                    context_parts = []
+                    if detail.get('context_before'):
+                        before_text = '; '.join(detail['context_before'])
+                        if before_text:
+                            before_short = before_text[:17] + '...' if len(before_text) > 17 else before_text
+                            context_parts.append(f"前: {before_short}")
+                    if detail.get('context_after'):
+                        after_text = '; '.join(detail['context_after'])
+                        if after_text:
+                            after_short = after_text[:17] + '...' if len(after_text) > 17 else after_text
+                            context_parts.append(f"后: {after_short}")
 
-                context_info = ' | '.join(context_parts) if context_parts else "-"
+                    context_info = ' | '.join(context_parts) if context_parts else "-"
 
-                md_content.append(f"| {idx} | {para_range} | {count} | {page_info} | {context_info} |")
+                    md_content.append(f"| {idx} | {para_range} | {count} | {page_info} | {context_info} |")
+        else:
+            md_content.append("✅ **状态**: 通过\n")
+            md_content.append(f"**结果**: {empty_lines_check['message']}\n")
+            if 'total_paragraphs' in empty_lines_check:
+                md_content.append(f"**文档总段落数**: {empty_lines_check['total_paragraphs']}\n")
     else:
-        md_content.append("✅ **状态**: 通过\n")
-        md_content.append(f"**结果**: {empty_lines_check['message']}\n")
-        if 'total_paragraphs' in empty_lines_check:
-            md_content.append(f"**文档总段落数**: {empty_lines_check['total_paragraphs']}\n")
+        md_content.append("⚠️ **状态**: 未检查\n")
+        md_content.append("**结果**: 本次检查未包含连续空行检查\n")
 
     md_content.append("\n## 5. 图表前后空行检查\n")
-    if figure_check['found']:
-        md_content.append("❌ **状态**: 发现问题\n")
-        md_content.append(f"**结果**: {figure_check['message']}\n")
-        if figure_check['details']:
-            md_content.append("\n**图表前后空行位置**:\n")
-            md_content.append("| 序号 | 图片索引 | 页码 | 前有空行 | 后有空行 |")
-            md_content.append("|------|----------|------|----------|----------|")
+    if figure_check and 'found' in figure_check:
+        if figure_check['found']:
+            md_content.append("❌ **状态**: 发现问题\n")
+            md_content.append(f"**结果**: {figure_check['message']}\n")
+            if figure_check['details']:
+                md_content.append("\n**图表前后空行位置**:\n")
+                md_content.append("| 序号 | 图片索引 | 页码 | 前有空行 | 后有空行 |")
+                md_content.append("|------|----------|------|----------|----------|")
 
-            for idx, detail in enumerate(figure_check['details'], 1):
-                before_status = "是" if detail['before_empty'] else "否"
-                after_status = "是" if detail['after_empty'] else "否"
-                figure_idx = detail.get('figure_index', detail.get('paragraph', idx))  # 兼容旧格式
-                md_content.append(f"| {idx} | 图片 {figure_idx} | 第 {detail['page']} 页 | {before_status} | {after_status} |")
+                for idx, detail in enumerate(figure_check['details'], 1):
+                    before_status = "是" if detail['before_empty'] else "否"
+                    after_status = "是" if detail['after_empty'] else "否"
+                    figure_idx = detail.get('figure_index', detail.get('paragraph', idx))  # 兼容旧格式
+                    md_content.append(f"| {idx} | 图片 {figure_idx} | 第 {detail['page']} 页 | {before_status} | {after_status} |")
+        else:
+            md_content.append("✅ **状态**: 通过\n")
+            md_content.append(f"**结果**: {figure_check['message']}\n")
     else:
-        md_content.append("✅ **状态**: 通过\n")
-        md_content.append(f"**结果**: {figure_check['message']}\n")
+        md_content.append("⚠️ **状态**: 未检查\n")
+        md_content.append("**结果**: 本次检查未包含图表前后空行检查\n")
 
     md_content.append("\n## 6. 题注对齐检查\n")
-    if caption_check['found']:
-        md_content.append("❌ **状态**: 发现问题\n")
-        md_content.append(f"**结果**: {caption_check['message']}\n")
-        if caption_check['details']:
-            md_content.append("\n**题注对齐问题位置**:\n")
-            md_content.append("| 序号 | 段落 | 页码 | 类型 | 对齐方式 | 题注内容 |")
-            md_content.append("|------|------|------|------|----------|----------|")
+    if caption_check and 'found' in caption_check:
+        if caption_check['found']:
+            md_content.append("❌ **状态**: 发现问题\n")
+            md_content.append(f"**结果**: {caption_check['message']}\n")
+            if caption_check['details']:
+                md_content.append("\n**题注对齐问题位置**:\n")
+                md_content.append("| 序号 | 段落 | 页码 | 类型 | 对齐方式 | 题注内容 |")
+                md_content.append("|------|------|------|------|----------|----------|")
 
-            for idx, detail in enumerate(caption_check['details'], 1):
-                alignment_map = {
-                    'left': '左对齐',
-                    'right': '右对齐',
-                    'justify': '两端对齐',
-                    'center': '居中'
-                }
-                alignment_text = alignment_map.get(detail['alignment'], detail['alignment'])
-                md_content.append(f"| {idx} | {detail['paragraph']} | 第 {detail['page']} 页 | {detail['type']} | {alignment_text} | {detail['text']} |")
+                for idx, detail in enumerate(caption_check['details'], 1):
+                    alignment_map = {
+                        'left': '左对齐',
+                        'right': '右对齐',
+                        'justify': '两端对齐',
+                        'center': '居中'
+                    }
+                    alignment_text = alignment_map.get(detail['alignment'], detail['alignment'])
+                    md_content.append(f"| {idx} | {detail['paragraph']} | 第 {detail['page']} 页 | {detail['type']} | {alignment_text} | {detail['text']} |")
+        else:
+            md_content.append("✅ **状态**: 通过\n")
+            md_content.append(f"**结果**: {caption_check['message']}\n")
     else:
-        md_content.append("✅ **状态**: 通过\n")
-        md_content.append(f"**结果**: {caption_check['message']}\n")
+        md_content.append("⚠️ **状态**: 未检查\n")
+        md_content.append("**结果**: 本次检查未包含题注对齐检查\n")
+
+    md_content.append("\n## 7. 参考文献检查\n")
+    if references_check:
+        details = references_check.get('details', {})
+        if not details:
+            details = references_check
+        if references_check.get('found'):
+            md_content.append("❌ **状态**: 发现问题\n")
+            md_content.append(f"**结果**: {references_check['message']}\n")
+            if details:
+                md_content.append(f"- **参考文献总数**: {references_check.get('total_references', len(details.get('references', [])))}\n")
+                md_content.append(f"- **被引用的参考文献数量**: {references_check.get('cited_references', len(details.get('citations', [])))}\n")
+                
+                unreferenced_count = references_check.get('unreferenced_count', 0)
+                unreferenced = details.get('unreferenced', [])
+                if not unreferenced:
+                    unreferenced = []
+                if isinstance(unreferenced, set):
+                    unreferenced = sorted(list(unreferenced))
+                elif not isinstance(unreferenced, list):
+                    unreferenced = []
+                md_content.append(f"- **未被引用的参考文献数量**: {unreferenced_count}\n")
+                
+                if unreferenced_count > 0:
+                    md_content.append("\n### 未引用参考文献详情\n")
+                    if unreferenced and len(unreferenced) > 0:
+                        md_content.append(f"共发现 **{len(unreferenced)}** 个未被引用的参考文献：\n\n")
+                        md_content.append("| 参考文献编号 | 参考文献内容 |\n")
+                        md_content.append("|-------------|-------------|\n")
+                        references_list = details.get('references', [])
+                        for ref_num in unreferenced:
+                            ref = next((r for r in references_list if r.get('number') == ref_num), None)
+                            if ref:
+                                ref_text = ref.get('full_text', ref.get('text', ''))
+                                if len(ref_text) > 200:
+                                    ref_text = ref_text[:200] + "..."
+                                md_content.append(f"| [{ref_num}] | {ref_text} |\n")
+                            else:
+                                md_content.append(f"| [{ref_num}] | (未找到详细信息) |\n")
+                        md_content.append("\n")
+                    else:
+                        md_content.append(f"⚠️ 共发现 **{unreferenced_count}** 个未被引用的参考文献，但无法获取详细信息。\n\n")
+
+                duplicates = details.get('duplicates', [])
+                duplicates_count = references_check.get('duplicates_count', len(duplicates))
+                md_content.append(f"- **重复的参考文献组数**: {duplicates_count}\n")
+
+                if duplicates:
+                    md_content.append("\n### 重复参考文献详情\n")
+                    md_content.append(f"共发现 **{len(duplicates)}** 组完全相同的重复参考文献：\n\n")
+                    md_content.append("| 重复组 | 参考文献编号 | 参考文献内容 |\n")
+                    md_content.append("|--------|-------------|-------------|\n")
+                    for idx, duplicate_pair in enumerate(duplicates, 1):
+                        if isinstance(duplicate_pair, tuple) and len(duplicate_pair) == 2:
+                            ref1, ref2 = duplicate_pair
+                            ref1_text = ref1.get('full_text', ref1.get('text', ''))
+                            if len(ref1_text) > 200:
+                                ref1_text = ref1_text[:200] + "..."
+                            ref2_text = ref2.get('full_text', ref2.get('text', ''))
+                            if len(ref2_text) > 200:
+                                ref2_text = ref2_text[:200] + "..."
+                            md_content.append(f"| {idx} | [{ref1.get('number', 'N/A')}] | {ref1_text} |\n")
+                            md_content.append(f"| {idx} | [{ref2.get('number', 'N/A')}] | {ref2_text} |\n")
+                    md_content.append("\n")
+                
+                heading_check = details.get('heading_check', {})
+                if heading_check:
+                    if heading_check.get('is_level1'):
+                        md_content.append("- **参考文献标题级别**: ✅ 正确（一级标题）\n")
+                    else:
+                        actual_level = heading_check.get('actual_level', '未知')
+                        md_content.append(f"- **参考文献标题级别**: ❌ 不符合要求（当前级别: {actual_level}，应为一级标题）\n")
+        else:
+            md_content.append("✅ **状态**: 通过\n")
+            md_content.append(f"**结果**: {references_check['message']}\n")
+            if details:
+                md_content.append(f"- **参考文献总数**: {references_check.get('total_references', len(details.get('references', [])))}\n")
+                md_content.append(f"- **被引用的参考文献数量**: {references_check.get('cited_references', len(details.get('citations', [])))}\n")
+                
+                unreferenced = details.get('unreferenced', [])
+                if isinstance(unreferenced, set):
+                    unreferenced = sorted(list(unreferenced))
+                elif not isinstance(unreferenced, list):
+                    unreferenced = []
+                if unreferenced:
+                    unreferenced_count = references_check.get('unreferenced_count', len(unreferenced))
+                    md_content.append(f"- **未被引用的参考文献数量**: {unreferenced_count}\n")
+                    md_content.append("\n### 未引用参考文献详情\n")
+                    md_content.append(f"共发现 **{len(unreferenced)}** 个未被引用的参考文献：\n\n")
+                    md_content.append("| 参考文献编号 | 参考文献内容 |\n")
+                    md_content.append("|-------------|-------------|\n")
+                    references_list = details.get('references', [])
+                    for ref_num in unreferenced:
+                        ref = next((r for r in references_list if r.get('number') == ref_num), None)
+                        if ref:
+                            ref_text = ref.get('full_text', ref.get('text', ''))
+                            if len(ref_text) > 200:
+                                ref_text = ref_text[:200] + "..."
+                            md_content.append(f"| [{ref_num}] | {ref_text} |\n")
+                    md_content.append("\n")
+                
+                duplicates = details.get('duplicates', [])
+                if duplicates:
+                    duplicates_count = references_check.get('duplicates_count', len(duplicates))
+                    md_content.append(f"- **重复的参考文献组数**: {duplicates_count}\n")
+                    md_content.append("\n### 重复参考文献详情\n")
+                    md_content.append(f"共发现 **{len(duplicates)}** 组完全相同的重复参考文献：\n\n")
+                    md_content.append("| 重复组 | 参考文献编号 | 参考文献内容 |\n")
+                    md_content.append("|--------|-------------|-------------|\n")
+                    for idx, duplicate_pair in enumerate(duplicates, 1):
+                        if isinstance(duplicate_pair, tuple) and len(duplicate_pair) == 2:
+                            ref1, ref2 = duplicate_pair
+                            ref1_text = ref1.get('full_text', ref1.get('text', ''))
+                            if len(ref1_text) > 200:
+                                ref1_text = ref1_text[:200] + "..."
+                            ref2_text = ref2.get('full_text', ref2.get('text', ''))
+                            if len(ref2_text) > 200:
+                                ref2_text = ref2_text[:200] + "..."
+                            md_content.append(f"| {idx} | [{ref1.get('number', 'N/A')}] | {ref1_text} |\n")
+                            md_content.append(f"| {idx} | [{ref2.get('number', 'N/A')}] | {ref2_text} |\n")
+                    md_content.append("\n")
+    else:
+        md_content.append("⚠️ **状态**: 未检查\n")
+        md_content.append("**结果**: 本次检查未包含参考文献检查\n")
 
     md_content.append("\n---\n")
-    md_content.append("\n## 7. 检查总结\n")
+    md_content.append("\n## 8. 检查总结\n")
 
-    header_status = "✅ 通过" if header_consistency['consistent'] else "❌ 失败"
-    footer_status = "✅ 通过" if footer_consistency['consistent'] else "❌ 失败"
-    empty_lines_status = "✅ 通过" if not empty_lines_check['found'] else "❌ 失败"
-    figure_status = "✅ 通过" if not figure_check['found'] else "❌ 失败"
-    caption_status = "✅ 通过" if not caption_check['found'] else "❌ 失败"
+    header_status = "✅ 通过" if (header_consistency and header_consistency.get('consistent')) else ("❌ 失败" if (header_consistency and 'consistent' in header_consistency) else "⚠️ 未检查")
+    footer_status = "✅ 通过" if (footer_consistency and footer_consistency.get('consistent')) else ("❌ 失败" if (footer_consistency and 'consistent' in footer_consistency) else "⚠️ 未检查")
+    empty_lines_status = "✅ 通过" if (empty_lines_check and not empty_lines_check.get('found', False)) else ("❌ 失败" if (empty_lines_check and 'found' in empty_lines_check) else "⚠️ 未检查")
+    figure_status = "✅ 通过" if (figure_check and not figure_check.get('found', False)) else ("❌ 失败" if (figure_check and 'found' in figure_check) else "⚠️ 未检查")
+    caption_status = "✅ 通过" if (caption_check and not caption_check.get('found', False)) else ("❌ 失败" if (caption_check and 'found' in caption_check) else "⚠️ 未检查")
+    references_status = "✅ 通过" if (references_check and not references_check.get('found', False)) else ("❌ 失败" if (references_check and 'found' in references_check) else "⚠️ 未检查")
 
     md_content.append("| 检查项 | 状态 |")
     md_content.append("|--------|------|")
@@ -184,18 +329,21 @@ def generate_markdown_report(docx_path, structure, headers, footers, header_cons
     md_content.append(f"| 连续空行检查 | {empty_lines_status} |")
     md_content.append(f"| 图表前后空行检查 | {figure_status} |")
     md_content.append(f"| 题注对齐检查 | {caption_status} |")
+    md_content.append(f"| 参考文献检查 | {references_status} |")
 
     issues = []
-    if not header_consistency['consistent']:
+    if header_consistency and 'consistent' in header_consistency and not header_consistency['consistent']:
         issues.append(f"**页眉**: {header_consistency['message']}")
-    if not footer_consistency['consistent']:
+    if footer_consistency and 'consistent' in footer_consistency and not footer_consistency['consistent']:
         issues.append(f"**页脚**: {footer_consistency['message']}")
-    if empty_lines_check['found']:
+    if empty_lines_check and empty_lines_check.get('found'):
         issues.append(f"**连续空行**: {empty_lines_check['message']}")
-    if figure_check['found']:
+    if figure_check and figure_check.get('found'):
         issues.append(f"**图表前后空行**: {figure_check['message']}")
-    if caption_check['found']:
+    if caption_check and caption_check.get('found'):
         issues.append(f"**题注对齐**: {caption_check['message']}")
+    if references_check and references_check.get('found'):
+        issues.append(f"**参考文献**: {references_check['message']}")
 
     if issues:
         md_content.append("\n### 发现的问题\n")

@@ -407,6 +407,7 @@ def main():
                 results.get("empty_lines", {}),
                 results.get("figures", {}),
                 results.get("captions", {}),
+                results.get("references", {}),
             )
 
             report_path = docx_path.parent / f"{docx_path.stem}_格式检查报告.md"

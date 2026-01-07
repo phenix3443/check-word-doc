@@ -1059,7 +1059,7 @@ def check_references_heading_level(docx_path, heading_text="参考文献", headi
                     alignment_message = f"，但对齐方式应为'{heading_alignment}'，实际为'{actual_alignment}'"
                 else:
                     alignment_message = f"，对齐方式为'{actual_alignment}'（正确）"
-            
+
             return {
                 "found": True,
                 "message": f"找到'{heading_text}'一级标题{alignment_message}",
@@ -1156,7 +1156,7 @@ def check_unreferenced_references(docx_path, config=None):
                 from config_loader import ConfigLoader
                 config_loader = ConfigLoader(config_path)
                 config = config_loader.load()
-        
+
         if config is None:
             print("⚠ Skipping heading check: configuration not available")
             heading_check = None
