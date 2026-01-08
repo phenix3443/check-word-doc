@@ -94,7 +94,7 @@ chinese_spacing:
 
 chinese_quotes:
   enabled: true
-  check_english_quotes: true # 基本配置：中文不能被英文双引号或单引号包围
+  check_english_quotes: true # 基本配置：检查中文是否被成对出现的英文双引号或单引号包围
   check_quote_matching: true # 基本配置：检查中文引号是否匹配（上引号必须有对应的下引号）
   # 支持的引号类型：
   # - 双引号："（左）和 "（右）

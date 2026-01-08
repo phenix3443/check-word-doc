@@ -100,6 +100,13 @@ Examples:
         help="Path to configuration file (YAML format, required)",
     )
 
+    parser.add_argument(
+        "--output",
+        "-o",
+        type=str,
+        help="Path to save the markdown report (default: <docx_path>_格式检查报告.md in the same directory as the document)",
+    )
+
     return parser.parse_args()
 
 
@@ -441,7 +448,12 @@ def main():
                 checks_to_run=checks_to_run,
             )
 
-            report_path = docx_path.parent / f"{docx_path.stem}_格式检查报告.md"
+            if args.output:
+                report_path = Path(args.output)
+                report_path.parent.mkdir(parents=True, exist_ok=True)
+            else:
+                report_path = docx_path.parent / f"{docx_path.stem}_格式检查报告.md"
+            
             with open(report_path, "w", encoding="utf-8") as f:
                 f.write(md_report)
             print(f"✓ Markdown report saved to: {report_path}")

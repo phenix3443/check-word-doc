@@ -486,26 +486,135 @@ def generate_chinese_quotes_report(chinese_quotes_check):
             if english_quotes:
                 md_content.append("\n### 英文引号问题\n")
                 md_content.append(f"共发现 **{len(english_quotes)}** 处英文引号问题：\n\n")
-                md_content.append("| 序号 | 段落 | 页码 | 类型 | 问题文本 |\n")
-                md_content.append("|------|------|------|------|----------|\n")
+                md_content.append("| 序号 | 段落 | 类型 | 问题文本 | 上下文 |\n")
+                md_content.append("|------|------|------|----------|--------|\n")
 
                 for idx, detail in enumerate(english_quotes, 1):
                     text = detail.get("text", "")
                     if len(text) > 50:
                         text = text[:47] + "..."
+                    context = detail.get("context", "")
+                    # 限制上下文为20个中文字符
+                    # 找到问题文本在上下文中的位置
+                    problem_text = detail.get("text", "")
+                    if problem_text in context:
+                        text_pos = context.find(problem_text)
+                        # 在问题文本前后各取约10个中文字符
+                        before_text = context[:text_pos]
+                        after_text = context[text_pos + len(problem_text):]
+                        
+                        # 从后往前取，直到达到10个中文字符
+                        chinese_count_before = 0
+                        before_limited = ""
+                        for char in reversed(before_text):
+                            if '\u4e00' <= char <= '\u9fff':
+                                chinese_count_before += 1
+                            before_limited = char + before_limited
+                            if chinese_count_before >= 10:
+                                break
+                        
+                        # 从前往后取，直到达到10个中文字符
+                        chinese_count_after = 0
+                        after_limited = ""
+                        for char in after_text:
+                            if '\u4e00' <= char <= '\u9fff':
+                                chinese_count_after += 1
+                            after_limited += char
+                            if chinese_count_after >= 10:
+                                break
+                        
+                        context_limited = before_limited + problem_text + after_limited
+                        if len(before_limited) < len(before_text):
+                            context_limited = "..." + context_limited
+                        if len(after_limited) < len(after_text):
+                            context_limited = context_limited + "..."
+                    else:
+                        # 如果找不到问题文本，直接限制整个上下文
+                        chinese_count = 0
+                        context_limited = ""
+                        for char in context:
+                            if '\u4e00' <= char <= '\u9fff':
+                                chinese_count += 1
+                            context_limited += char
+                            if chinese_count >= 20:
+                                break
+                        if len(context_limited) < len(context):
+                            context_limited += "..."
+                    
                     md_content.append(
-                        f"| {idx} | {detail['paragraph']} | 第 {detail['page']} 页 | {detail.get('type', 'N/A')} | {text} |\n"
+                        f"| {idx} | {detail['paragraph']} | 中文使用了英文引号 | {text} | {context_limited} |\n"
                     )
 
             if quote_matching:
                 md_content.append("\n### 引号匹配问题\n")
                 md_content.append(f"共发现 **{len(quote_matching)}** 处引号匹配问题：\n\n")
-                md_content.append("| 序号 | 段落 | 页码 | 引号类型 | 左引号数 | 右引号数 |\n")
-                md_content.append("|------|------|------|----------|----------|----------|\n")
+                md_content.append("| 序号 | 段落 | 类型 | 问题文本 | 上下文 |\n")
+                md_content.append("|------|------|------|----------|--------|\n")
 
                 for idx, detail in enumerate(quote_matching, 1):
+                    context = detail.get('context', detail.get('text', ''))
+                    # 不要截断上下文，保留完整内容以便正确提取问题文本
+                    # if len(context) > 50:
+                    #     context = context[:47] + "..."
+                    # 提取问题文本：只显示引号及其直接包含的内容
+                    problem_text = ""
+                    quote_type = detail.get('quote_type', '')
+                    if quote_type:
+                        left_quote = quote_type[0] if len(quote_type) > 0 else ''
+                        right_quote = quote_type[1] if len(quote_type) > 1 else ''
+                        
+                        # 查找上下文中的所有引号位置（包括Unicode和ASCII引号）
+                        # 支持多种引号字符
+                        all_quotes = []
+                        quote_chars = [left_quote, right_quote, '"', '"', '\u201c', '\u201d', '\u2018', '\u2019']
+                        for i, char in enumerate(context):
+                            if char in quote_chars:
+                                all_quotes.append((i, char))
+                        
+                        if all_quotes:
+                            # 找到所有引号对，选择包含中文且最短的那个
+                            left_quote_chars = [left_quote, '\u201c', '\u2018', '"']
+                            right_quote_chars = [right_quote, '\u201d', '\u2019', '"']
+                            
+                            # 找到所有可能的引号对
+                            quote_pairs = []
+                            for i, (left_pos, left_char) in enumerate(all_quotes):
+                                if left_char in left_quote_chars:
+                                    # 找到这个左引号后的第一个右引号
+                                    for right_pos, right_char in all_quotes[i+1:]:
+                                        if right_char in right_quote_chars:
+                                            quote_pairs.append((left_pos, right_pos))
+                                            break
+                            
+                            # 选择包含中文且最短的引号对
+                            if quote_pairs:
+                                # 先筛选出包含中文的引号对
+                                chinese_pairs = []
+                                for left_pos, right_pos in quote_pairs:
+                                    text_between = context[left_pos:right_pos + 1]
+                                    if any('\u4e00' <= c <= '\u9fff' for c in text_between):
+                                        chinese_pairs.append((left_pos, right_pos))
+                                
+                                if chinese_pairs:
+                                    # 从包含中文的引号对中选择最短的
+                                    best_pair = min(chinese_pairs, key=lambda p: p[1] - p[0] + 1)
+                                    left_pos, right_pos = best_pair
+                                    problem_text = context[left_pos:right_pos + 1]
+                                else:
+                                    # 如果没有包含中文的引号对，选择最短的引号对
+                                    shortest_pair = min(quote_pairs, key=lambda p: p[1] - p[0] + 1)
+                                    left_pos, right_pos = shortest_pair
+                                    problem_text = context[left_pos:right_pos + 1]
+                            else:
+                                # 没有找到匹配的引号对，只显示第一个引号
+                                if all_quotes:
+                                    first_pos, first_char = all_quotes[0]
+                                    problem_text = context[first_pos:first_pos + 1]
+                    
+                    if not problem_text:
+                        problem_text = context[:30] + "..." if len(context) > 30 else context
                     md_content.append(
-                        f"| {idx} | {detail['paragraph']} | 第 {detail['page']} 页 | {detail.get('quote_type', 'N/A')} | {detail.get('left_count', 0)} | {detail.get('right_count', 0)} |\n"
+                        f"| {idx} | {detail['paragraph']} | 左右引号不匹配 | {problem_text} | {context} |\n"
                     )
         else:
             md_content.append("✅ **状态**: 通过\n")
@@ -750,19 +859,19 @@ def generate_markdown_report(
     if checks_to_run is None or "chinese_quotes" in checks_to_run or "all" in checks_to_run:
         md_content.append(generate_chinese_quotes_report(chinese_quotes_check))
 
-    # 检查总结
-    md_content.append(
-        generate_summary_report(
-            checks_to_run,
-            header_consistency,
-            footer_consistency,
-            empty_lines_check,
-            figure_check,
-            caption_check,
-            references_check,
-            chinese_spacing_check,
-            chinese_quotes_check,
-        )
-    )
+    # 检查总结（已移除）
+    # md_content.append(
+    #     generate_summary_report(
+    #         checks_to_run,
+    #         header_consistency,
+    #         footer_consistency,
+    #         empty_lines_check,
+    #         figure_check,
+    #         caption_check,
+    #         references_check,
+    #         chinese_spacing_check,
+    #         chinese_quotes_check,
+    #     )
+    # )
 
     return "".join(md_content)
