@@ -1,0 +1,22 @@
+# 测试用导入配置文件
+# 测试配置文件导入功能
+
+# 导入基本配置
+import: basic.yaml
+
+# 覆盖部分配置
+structure:
+  enabled: true
+  required_parts:
+    table_of_contents: true
+    body: true
+    references: true  # 覆盖基本配置中的 false
+    cover: true       # 添加新的要求
+
+# 添加新的配置
+headings:
+  enabled: true
+  check_styles: ["Heading 1", "Heading 2", "Heading 3"]
+  numbering:
+    check_continuity: true
+    check_hierarchy: true

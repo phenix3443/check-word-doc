@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 import argparse
 
-from structure import analyze_document_structure
+from structure import analyze_document_structure, run_structure_check
 from functions import (
     run_cover_check,
     run_toc_check,
@@ -15,14 +15,12 @@ from functions import (
     run_table_list_check,
     run_headers_check,
     run_footers_check,
-    run_empty_lines_check,
     run_figures_check,
     run_captions_check,
     run_references_check,
     run_page_numbers_check,
-    run_chinese_spacing_check,
-    run_chinese_quotes_check,
 )
+from paragraphs import run_paragraphs_check
 from report import generate_markdown_report
 from config_loader import ConfigLoader
 import os
@@ -63,19 +61,18 @@ Examples:
         dest="checks",
         choices=[
             "all",
+            "structure",
             "cover",
             "toc",
             "figure_list",
             "table_list",
+            "paragraphs",
             "headers",
             "footers",
-            "empty_lines",
             "figures",
             "captions",
             "references",
             "page_numbers",
-            "chinese_spacing",
-            "chinese_quotes",
         ],
         help="Specific check item to run (can be specified multiple times)",
     )
@@ -114,6 +111,7 @@ def list_available_checks():
     """List all available check items."""
     checks = {
         "all": "Run all checks (default)",
+        "structure": "Check document structure (required parts, order)",
         "cover": "Check cover page font",
         "toc": "Check table of contents (format, numbering, page accuracy)",
         "figure_list": "Check figure list (format, numbering, page accuracy)",
@@ -121,12 +119,10 @@ def list_available_checks():
         "headers": "Check header consistency",
         "footers": "Check footer consistency",
         "page_numbers": "Check page numbers format and style",
-        "empty_lines": "Check consecutive empty lines",
+        "paragraphs": "Check paragraphs (spacing, quotes, empty lines)",
         "figures": "Check figure empty lines",
         "captions": "Check caption alignment",
         "references": "Check references format and citations",
-        "chinese_spacing": "Check Chinese spacing (no spaces between Chinese characters)",
-        "chinese_quotes": "Check Chinese quotes format",
     }
 
     print("Available check items:")
@@ -169,19 +165,18 @@ def main():
     checks_to_run = args.checks if args.checks else ["all"]
     if "all" in checks_to_run:
         checks_to_run = [
+            "structure",
             "cover",
             "toc",
             "figure_list",
             "table_list",
+            "paragraphs",
             "headers",
             "footers",
-            "empty_lines",
             "figures",
             "captions",
             "references",
             "page_numbers",
-            "chinese_spacing",
-            "chinese_quotes",
         ]
 
     print("=" * 80)
@@ -195,45 +190,68 @@ def main():
     config_loader = ConfigLoader(str(config_path))
     config_loader.load()
 
-    structure = None
-    if any(check in checks_to_run for check in ["headers", "footers", "all"]):
-        print("Analyzing document structure...")
-        structure = analyze_document_structure(docx_path)
-        print(f"   Found {len(structure['headers'])} header file(s)")
-        print(f"   Found {len(structure['footers'])} footer file(s)")
-        print()
+    # 首先分析文档结构
+    print("Analyzing document structure...")
+    structure = analyze_document_structure(docx_path)
+    print(f"   Total paragraphs: {structure['total_paragraphs']}")
+    print(f"   Found {len(structure['headers'])} header file(s)")
+    print(f"   Found {len(structure['footers'])} footer file(s)")
+    
+    # 显示文档各部分信息
+    parts = structure.get('document_parts', {})
+    for part_name, part_info in parts.items():
+        if part_info['paragraphs']:
+            start_idx = min(part_info['paragraphs']) if part_info['paragraphs'] else 'N/A'
+            end_idx = max(part_info['paragraphs']) if part_info['paragraphs'] else 'N/A'
+            count = len(part_info['paragraphs'])
+            print(f"   {part_name.capitalize()}: paragraphs {start_idx}-{end_idx} ({count} paragraphs)")
+    print()
 
     results = {}
     step = 1
 
-    if "cover" in checks_to_run:
+    # 首先执行结构检查
+    if "structure" in checks_to_run:
         print(f"{step}. ", end="")
-        results["cover"] = run_cover_check(docx_path)
+        results["structure"] = run_structure_check(docx_path, config_loader, structure)
         step += 1
         print()
 
-    if "toc" in checks_to_run:
+    # 基于文档结构执行相应的检查
+    if "cover" in checks_to_run and parts.get('cover', {}).get('paragraphs'):
         print(f"{step}. ", end="")
-        results["toc"] = run_toc_check(docx_path)
+        results["cover"] = run_cover_check(docx_path)  # 暂时保持向后兼容
         step += 1
         print()
 
-    if "figure_list" in checks_to_run:
+    if "toc" in checks_to_run and parts.get('toc', {}).get('paragraphs'):
         print(f"{step}. ", end="")
-        results["figure_list"] = run_figure_list_check(docx_path)
+        results["toc"] = run_toc_check(docx_path)  # 暂时保持向后兼容
         step += 1
         print()
 
-    if "table_list" in checks_to_run:
+    if "figure_list" in checks_to_run and parts.get('figure_list', {}).get('paragraphs'):
         print(f"{step}. ", end="")
-        results["table_list"] = run_table_list_check(docx_path)
+        results["figure_list"] = run_figure_list_check(docx_path)  # 暂时保持向后兼容
+        step += 1
+        print()
+
+    if "table_list" in checks_to_run and parts.get('table_list', {}).get('paragraphs'):
+        print(f"{step}. ", end="")
+        results["table_list"] = run_table_list_check(docx_path)  # 暂时保持向后兼容
+        step += 1
+        print()
+
+    if "paragraphs" in checks_to_run:
+        print(f"{step}. ", end="")
+        results["paragraphs"] = run_paragraphs_check(docx_path, config_loader, structure)
         step += 1
         print()
 
     usage_info = None
     if "headers" in checks_to_run:
         print(f"{step}. ", end="")
-        headers_result = run_headers_check(docx_path)
+        headers_result = run_headers_check(docx_path)  # 暂时保持向后兼容
         results["headers"] = headers_result
         usage_info = headers_result.get("usage_info")
         step += 1
@@ -241,51 +259,35 @@ def main():
 
     if "footers" in checks_to_run:
         print(f"{step}. ", end="")
-        results["footers"] = run_footers_check(docx_path, usage_info)
+        results["footers"] = run_footers_check(docx_path, usage_info)  # 暂时保持向后兼容
         step += 1
         print()
 
-    if "empty_lines" in checks_to_run:
+    if "figures" in checks_to_run and parts.get('body', {}).get('paragraphs'):
         print(f"{step}. ", end="")
-        results["empty_lines"] = run_empty_lines_check(docx_path, config_loader)
+        results["figures"] = run_figures_check(docx_path)  # 暂时保持向后兼容
         step += 1
         print()
 
-    if "figures" in checks_to_run:
+    if "captions" in checks_to_run and parts.get('body', {}).get('paragraphs'):
         print(f"{step}. ", end="")
-        results["figures"] = run_figures_check(docx_path)
+        results["captions"] = run_captions_check(docx_path)  # 暂时保持向后兼容
         step += 1
         print()
 
-    if "captions" in checks_to_run:
+    if "references" in checks_to_run and parts.get('references', {}).get('paragraphs'):
         print(f"{step}. ", end="")
-        results["captions"] = run_captions_check(docx_path)
-        step += 1
-        print()
-
-    if "references" in checks_to_run:
-        print(f"{step}. ", end="")
-        results["references"] = run_references_check(docx_path, config_loader)
+        results["references"] = run_references_check(docx_path, config_loader)  # 暂时保持向后兼容
         step += 1
         print()
 
     if "page_numbers" in checks_to_run:
         print(f"{step}. ", end="")
-        results["page_numbers"] = run_page_numbers_check(docx_path, config_loader)
+        results["page_numbers"] = run_page_numbers_check(docx_path, config_loader)  # 暂时保持向后兼容
         step += 1
         print()
 
-    if "chinese_spacing" in checks_to_run:
-        print(f"{step}. ", end="")
-        results["chinese_spacing"] = run_chinese_spacing_check(docx_path, config_loader)
-        step += 1
-        print()
 
-    if "chinese_quotes" in checks_to_run:
-        print(f"{step}. ", end="")
-        results["chinese_quotes"] = run_chinese_quotes_check(docx_path, config_loader)
-        step += 1
-        print()
 
     print("=" * 80)
     print("SUMMARY")
@@ -296,7 +298,9 @@ def main():
         if check_result is None:
             continue
 
-        if check_name == "cover":
+        if check_name == "structure":
+            print(f"Document structure: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}")
+        elif check_name == "cover":
             print(f"Cover font: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}")
         elif check_name == "toc":
             toc_order = check_result.get("order", {})
@@ -321,24 +325,20 @@ def main():
             print(f"Table list format: {'✓ PASS' if not tbl_format.get('found') else '✗ FAIL'}")
             print(f"Table list numbering: {'✓ PASS' if not tbl_numbering.get('found') else '✗ FAIL'}")
             print(f"Table list page accuracy: {'✓ PASS' if not tbl_page.get('found') else '✗ FAIL'}")
+        elif check_name == "paragraphs":
+            print(f"Paragraphs: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}")
         elif check_name == "headers":
             headers_consistency = check_result.get("consistency", {})
             print(f"Header consistency: {'✓ PASS' if headers_consistency.get('consistent') else '✗ FAIL'}")
         elif check_name == "footers":
             footers_consistency = check_result.get("consistency", {})
             print(f"Footer consistency: {'✓ PASS' if footers_consistency.get('consistent') else '✗ FAIL'}")
-        elif check_name == "empty_lines":
-            print(f"Consecutive empty lines: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}")
         elif check_name == "figures":
             print(f"Figure empty lines: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}")
         elif check_name == "captions":
             print(f"Caption alignment: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}")
         elif check_name == "references":
             print(f"References check: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}")
-        elif check_name == "chinese_spacing":
-            print(f"Chinese spacing: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}")
-        elif check_name == "chinese_quotes":
-            print(f"Chinese quotes: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}")
 
     issues = []
     for check_name in checks_to_run:
@@ -346,7 +346,9 @@ def main():
         if check_result is None:
             continue
 
-        if check_name == "cover" and check_result.get("found"):
+        if check_name == "structure" and check_result.get("found"):
+            issues.append(f"Document structure: {check_result.get('message', 'N/A')}")
+        elif check_name == "cover" and check_result.get("found"):
             issues.append(f"Cover font: {check_result.get('message', 'N/A')}")
         elif check_name == "toc":
             toc_order = check_result.get("order", {})
@@ -389,18 +391,14 @@ def main():
             footers_consistency = check_result.get("consistency", {})
             if not footers_consistency.get("consistent"):
                 issues.append(f"Footers: {footers_consistency.get('message', 'N/A')}")
-        elif check_name == "empty_lines" and check_result.get("found"):
-            issues.append(f"Consecutive empty lines: {check_result.get('message', 'N/A')}")
         elif check_name == "figures" and check_result.get("found"):
             issues.append(f"Figure empty lines: {check_result.get('message', 'N/A')}")
         elif check_name == "captions" and check_result.get("found"):
             issues.append(f"Caption alignment: {check_result.get('message', 'N/A')}")
         elif check_name == "references" and check_result.get("found"):
             issues.append(f"References: {check_result.get('message', 'N/A')}")
-        elif check_name == "chinese_spacing" and check_result.get("found"):
-            issues.append(f"Chinese spacing: {check_result.get('message', 'N/A')}")
-        elif check_name == "chinese_quotes" and check_result.get("found"):
-            issues.append(f"Chinese quotes: {check_result.get('message', 'N/A')}")
+        elif check_name == "paragraphs" and check_result.get("found"):
+            issues.append(f"Paragraphs: {check_result.get('message', 'N/A')}")
 
     if issues:
         print()
@@ -439,12 +437,10 @@ def main():
                 footers,
                 consistency,
                 footer_consistency,
-                results.get("empty_lines", {}),
+                results.get("paragraphs", {}),
                 results.get("figures", {}),
                 results.get("captions", {}),
                 results.get("references", {}),
-                results.get("chinese_spacing", {}),
-                results.get("chinese_quotes", {}),
                 checks_to_run=checks_to_run,
             )
 

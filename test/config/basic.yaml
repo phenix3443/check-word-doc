@@ -1,0 +1,33 @@
+# 测试用基本配置文件
+# 用于测试配置加载功能
+
+checks:
+  - structure
+  - paragraphs
+  - references
+
+structure:
+  enabled: true
+  required_parts:
+    table_of_contents: true
+    body: true
+    references: false
+
+paragraphs:
+  enabled: true
+  check_styles: ["Normal", "正文"]
+  spacing:
+    chinese_spacing: true
+  quotes:
+    english_quotes: true
+    quote_matching: true
+  empty_lines:
+    consecutive: true
+    max_consecutive: 0
+
+references:
+  enabled: true
+  required: false
+  citation:
+    check_superscript: true
+    format_pattern: "^\\[\\d+(-\\d+)?(,\\s*\\d+)*\\]$"

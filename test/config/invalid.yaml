@@ -1,0 +1,35 @@
+# 测试用无效配置文件
+# 包含各种配置错误，用于测试错误处理
+
+checks:
+  - invalid_check_name  # 无效的检查项名称
+  - structure
+  - paragraphs
+
+structure:
+  enabled: "yes"  # 应该是布尔值，不是字符串
+  required_parts:
+    invalid_part: true  # 无效的文档部分名称
+    table_of_contents: "true"  # 应该是布尔值
+
+paragraphs:
+  enabled: true
+  check_styles: "Normal"  # 应该是数组，不是字符串
+  spacing:
+    chinese_spacing: "enabled"  # 应该是布尔值
+  quotes:
+    english_quotes: 1  # 应该是布尔值
+    quote_matching: null  # 应该是布尔值
+  empty_lines:
+    consecutive: true
+    max_consecutive: -1  # 应该是非负数
+
+references:
+  enabled: true
+  required: "maybe"  # 应该是布尔值
+  citation:
+    check_superscript: "on"  # 应该是布尔值
+    format_pattern: "[invalid regex"  # 无效的正则表达式
+
+# 缺少必需的配置项
+# missing_required_config: value

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-参考文献分析脚本测试
+参考文献检查功能测试
 
-用于测试 generate_reference_analysis.py 的功能
+包括参考文献格式检查、引用检查等功能测试
 """
 
 import os

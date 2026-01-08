@@ -586,35 +586,143 @@ def generate_chinese_quotes_report(chinese_quotes_check):
                                             quote_pairs.append((left_pos, right_pos))
                                             break
                             
-                            # 选择包含中文且最短的引号对
-                            if quote_pairs:
-                                # 先筛选出包含中文的引号对
-                                chinese_pairs = []
-                                for left_pos, right_pos in quote_pairs:
-                                    text_between = context[left_pos:right_pos + 1]
-                                    if any('\u4e00' <= c <= '\u9fff' for c in text_between):
-                                        chinese_pairs.append((left_pos, right_pos))
-                                
-                                if chinese_pairs:
-                                    # 从包含中文的引号对中选择最短的
-                                    best_pair = min(chinese_pairs, key=lambda p: p[1] - p[0] + 1)
-                                    left_pos, right_pos = best_pair
-                                    problem_text = context[left_pos:right_pos + 1]
-                                else:
-                                    # 如果没有包含中文的引号对，选择最短的引号对
-                                    shortest_pair = min(quote_pairs, key=lambda p: p[1] - p[0] + 1)
-                                    left_pos, right_pos = shortest_pair
-                                    problem_text = context[left_pos:right_pos + 1]
+                            # 找出不匹配的引号内容
+                            # 分析引号匹配情况，找出问题所在
+                            left_positions = []
+                            right_positions = []
+                            
+                            for pos, char in all_quotes:
+                                if char in left_quote_chars:
+                                    left_positions.append(pos)
+                                if char in right_quote_chars:
+                                    right_positions.append(pos)
+                            
+                            # 找出不匹配的引号内容
+                            if len(left_positions) != len(right_positions):
+                                # 引号数量不匹配，找出多余的引号及其内容
+                                if len(right_positions) > len(left_positions):
+                                    # 右引号多于左引号，找出多余的右引号内容
+                                    if left_positions and right_positions:
+                                        # 找到所有可能的引号片段
+                                        segments = []
+                                        
+                                        # 方法1: 找相邻的引号对
+                                        for i in range(len(all_quotes) - 1):
+                                            pos1, char1 = all_quotes[i]
+                                            pos2, char2 = all_quotes[i + 1]
+                                            text_segment = context[pos1:pos2 + 1]
+                                            has_chinese = any('\u4e00' <= c <= '\u9fff' for c in text_segment)
+                                            # 只要包含中文就添加到候选列表
+                                            if has_chinese:
+                                                segments.append((pos1, pos2, text_segment, len(text_segment)))
+                                        
+                                        if segments:
+                                            # 选择最短的包含中文的片段
+                                            best_segment = min(segments, key=lambda x: x[3])
+                                            problem_text = best_segment[2]
+                                        else:
+                                            # 如果没有找到合适的片段，使用原逻辑
+                                            last_left = left_positions[-1]
+                                            unmatched_rights = [pos for pos in right_positions if pos > last_left]
+                                            if unmatched_rights:
+                                                best_right = min(unmatched_rights)
+                                                problem_text = context[last_left:best_right + 1]
+                                elif len(left_positions) > len(right_positions):
+                                    # 左引号多于右引号，取未匹配的左引号及其后的内容
+                                    unmatched_left = left_positions[len(right_positions):]
+                                    if unmatched_left:
+                                        start_pos = unmatched_left[0]
+                                        # 取到下一个引号或文本结束
+                                        end_pos = len(context)
+                                        for pos, char in all_quotes:
+                                            if pos > start_pos:
+                                                end_pos = pos + 1
+                                                break
+                                        problem_text = context[start_pos:min(end_pos, start_pos + 20)]
+                                        if end_pos > start_pos + 20:
+                                            problem_text += "..."
                             else:
-                                # 没有找到匹配的引号对，只显示第一个引号
-                                if all_quotes:
-                                    first_pos, first_char = all_quotes[0]
-                                    problem_text = context[first_pos:first_pos + 1]
+                                # 引号数量匹配但可能嵌套错误，使用原有逻辑
+                                if quote_pairs:
+                                    chinese_pairs = []
+                                    for left_pos, right_pos in quote_pairs:
+                                        text_between = context[left_pos:right_pos + 1]
+                                        if any('\u4e00' <= c <= '\u9fff' for c in text_between):
+                                            chinese_pairs.append((left_pos, right_pos))
+                                    
+                                    if chinese_pairs:
+                                        best_pair = min(chinese_pairs, key=lambda p: p[1] - p[0] + 1)
+                                        left_pos, right_pos = best_pair
+                                        problem_text = context[left_pos:right_pos + 1]
+                                    else:
+                                        shortest_pair = min(quote_pairs, key=lambda p: p[1] - p[0] + 1)
+                                        left_pos, right_pos = shortest_pair
+                                        problem_text = context[left_pos:right_pos + 1]
+                                else:
+                                    if all_quotes:
+                                        first_pos, first_char = all_quotes[0]
+                                        problem_text = context[first_pos:first_pos + 1]
+                            
                     
                     if not problem_text:
                         problem_text = context[:30] + "..." if len(context) > 30 else context
+                    
+                    # 限制上下文为以问题文本为中心的20个中文字符
+                    context_limited = ""
+                    if problem_text in context:
+                        # 找到问题文本在上下文中的位置
+                        problem_pos = context.find(problem_text)
+                        before_text = context[:problem_pos]
+                        after_text = context[problem_pos + len(problem_text):]
+                        
+                        # 计算问题文本中的中文字符数
+                        problem_chinese_count = sum(1 for c in problem_text if '\u4e00' <= c <= '\u9fff')
+                        remaining_chinese = max(0, 20 - problem_chinese_count)
+                        
+                        # 前后各分配一半的剩余中文字符
+                        before_target = remaining_chinese // 2
+                        after_target = remaining_chinese - before_target
+                        
+                        # 从问题文本前取指定数量的中文字符
+                        chinese_count_before = 0
+                        before_limited = ""
+                        for char in reversed(before_text):
+                            if '\u4e00' <= char <= '\u9fff':
+                                chinese_count_before += 1
+                            before_limited = char + before_limited
+                            if chinese_count_before >= before_target:
+                                break
+                        
+                        # 从问题文本后取指定数量的中文字符
+                        chinese_count_after = 0
+                        after_limited = ""
+                        for char in after_text:
+                            if '\u4e00' <= char <= '\u9fff':
+                                chinese_count_after += 1
+                            after_limited += char
+                            if chinese_count_after >= after_target:
+                                break
+                        
+                        # 组合上下文
+                        context_limited = before_limited + problem_text + after_limited
+                        if len(before_limited) < len(before_text):
+                            context_limited = "..." + context_limited
+                        if len(after_limited) < len(after_text):
+                            context_limited = context_limited + "..."
+                    else:
+                        # 如果问题文本不在上下文中，按原逻辑处理
+                        chinese_count = 0
+                        for char in context:
+                            if '\u4e00' <= char <= '\u9fff':
+                                chinese_count += 1
+                            context_limited += char
+                            if chinese_count >= 20:
+                                break
+                        if len(context_limited) < len(context):
+                            context_limited += "..."
+                    
                     md_content.append(
-                        f"| {idx} | {detail['paragraph']} | 左右引号不匹配 | {problem_text} | {context} |\n"
+                        f"| {idx} | {detail['paragraph']} | 左右引号不匹配 | {problem_text} | {context_limited} |\n"
                     )
         else:
             md_content.append("✅ **状态**: 通过\n")

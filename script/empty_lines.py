@@ -10,7 +10,7 @@ from utils import estimate_page_from_paragraph
 from cover import find_first_page_end
 
 
-def check_consecutive_empty_lines(docx_path, max_consecutive=None):
+def check_consecutive_empty_lines(docx_path, max_consecutive=None, target_paragraphs=None):
     """
     Check for consecutive empty lines.
 

@@ -207,22 +207,19 @@ class ConfigLoader:
         """Validate checks section."""
         checks = self.config["checks"]
         valid_check_names = [
+            "structure",
             "cover",
             "table_of_contents",
             "figure_list",
             "table_list",
-            "body_paragraphs",
-            "body_headings",
+            "paragraphs",
+            "headings",
             "captions",
             "references",
             "attachments",
             "headers",
             "footers",
             "page_numbers",
-            "empty_lines",
-            "consecutive_empty_lines",
-            "chinese_spacing",
-            "chinese_quotes",
         ]
 
         if not isinstance(checks, list):
@@ -241,12 +238,13 @@ class ConfigLoader:
     def _validate_check_items(self):
         """Validate individual check item configurations."""
         check_items = [
+            "structure",
             "cover",
             "table_of_contents",
             "figure_list",
             "table_list",
-            "body_paragraphs",
-            "body_headings",
+            "paragraphs",
+            "headings",
             "captions",
             "references",
             "attachments",
