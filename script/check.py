@@ -152,7 +152,7 @@ def main():
             print(f"Error: Configuration file not found: {config_path}")
             sys.exit(1)
         # Set environment variable for config path
-        os.environ['CUSTOM_CONFIG_PATH'] = str(config_path.absolute())
+        os.environ["CUSTOM_CONFIG_PATH"] = str(config_path.absolute())
         print(f"Using custom configuration: {config_path}")
         print()
 
@@ -196,15 +196,19 @@ def main():
     print(f"   Total paragraphs: {structure['total_paragraphs']}")
     print(f"   Found {len(structure['headers'])} header file(s)")
     print(f"   Found {len(structure['footers'])} footer file(s)")
-    
+
     # 显示文档各部分信息
-    parts = structure.get('document_parts', {})
+    parts = structure.get("document_parts", {})
     for part_name, part_info in parts.items():
-        if part_info['paragraphs']:
-            start_idx = min(part_info['paragraphs']) if part_info['paragraphs'] else 'N/A'
-            end_idx = max(part_info['paragraphs']) if part_info['paragraphs'] else 'N/A'
-            count = len(part_info['paragraphs'])
-            print(f"   {part_name.capitalize()}: paragraphs {start_idx}-{end_idx} ({count} paragraphs)")
+        if part_info["paragraphs"]:
+            start_idx = (
+                min(part_info["paragraphs"]) if part_info["paragraphs"] else "N/A"
+            )
+            end_idx = max(part_info["paragraphs"]) if part_info["paragraphs"] else "N/A"
+            count = len(part_info["paragraphs"])
+            print(
+                f"   {part_name.capitalize()}: paragraphs {start_idx}-{end_idx} ({count} paragraphs)"
+            )
     print()
 
     results = {}
@@ -218,25 +222,27 @@ def main():
         print()
 
     # 基于文档结构执行相应的检查
-    if "cover" in checks_to_run and parts.get('cover', {}).get('paragraphs'):
+    if "cover" in checks_to_run and parts.get("cover", {}).get("paragraphs"):
         print(f"{step}. ", end="")
         results["cover"] = run_cover_check(docx_path)  # 暂时保持向后兼容
         step += 1
         print()
 
-    if "toc" in checks_to_run and parts.get('toc', {}).get('paragraphs'):
+    if "toc" in checks_to_run and parts.get("toc", {}).get("paragraphs"):
         print(f"{step}. ", end="")
         results["toc"] = run_toc_check(docx_path)  # 暂时保持向后兼容
         step += 1
         print()
 
-    if "figure_list" in checks_to_run and parts.get('figure_list', {}).get('paragraphs'):
+    if "figure_list" in checks_to_run and parts.get("figure_list", {}).get(
+        "paragraphs"
+    ):
         print(f"{step}. ", end="")
         results["figure_list"] = run_figure_list_check(docx_path)  # 暂时保持向后兼容
         step += 1
         print()
 
-    if "table_list" in checks_to_run and parts.get('table_list', {}).get('paragraphs'):
+    if "table_list" in checks_to_run and parts.get("table_list", {}).get("paragraphs"):
         print(f"{step}. ", end="")
         results["table_list"] = run_table_list_check(docx_path)  # 暂时保持向后兼容
         step += 1
@@ -244,7 +250,9 @@ def main():
 
     if "paragraphs" in checks_to_run:
         print(f"{step}. ", end="")
-        results["paragraphs"] = run_paragraphs_check(docx_path, config_loader, structure)
+        results["paragraphs"] = run_paragraphs_check(
+            docx_path, config_loader, structure
+        )
         step += 1
         print()
 
@@ -259,35 +267,39 @@ def main():
 
     if "footers" in checks_to_run:
         print(f"{step}. ", end="")
-        results["footers"] = run_footers_check(docx_path, usage_info)  # 暂时保持向后兼容
+        results["footers"] = run_footers_check(
+            docx_path, usage_info
+        )  # 暂时保持向后兼容
         step += 1
         print()
 
-    if "figures" in checks_to_run and parts.get('body', {}).get('paragraphs'):
+    if "figures" in checks_to_run and parts.get("body", {}).get("paragraphs"):
         print(f"{step}. ", end="")
         results["figures"] = run_figures_check(docx_path)  # 暂时保持向后兼容
         step += 1
         print()
 
-    if "captions" in checks_to_run and parts.get('body', {}).get('paragraphs'):
+    if "captions" in checks_to_run and parts.get("body", {}).get("paragraphs"):
         print(f"{step}. ", end="")
         results["captions"] = run_captions_check(docx_path)  # 暂时保持向后兼容
         step += 1
         print()
 
-    if "references" in checks_to_run and parts.get('references', {}).get('paragraphs'):
+    if "references" in checks_to_run and parts.get("references", {}).get("paragraphs"):
         print(f"{step}. ", end="")
-        results["references"] = run_references_check(docx_path, config_loader)  # 暂时保持向后兼容
+        results["references"] = run_references_check(
+            docx_path, config_loader
+        )  # 暂时保持向后兼容
         step += 1
         print()
 
     if "page_numbers" in checks_to_run:
         print(f"{step}. ", end="")
-        results["page_numbers"] = run_page_numbers_check(docx_path, config_loader)  # 暂时保持向后兼容
+        results["page_numbers"] = run_page_numbers_check(
+            docx_path, config_loader
+        )  # 暂时保持向后兼容
         step += 1
         print()
-
-
 
     print("=" * 80)
     print("SUMMARY")
@@ -299,46 +311,80 @@ def main():
             continue
 
         if check_name == "structure":
-            print(f"Document structure: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}")
+            print(
+                f"Document structure: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}"
+            )
         elif check_name == "cover":
-            print(f"Cover font: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}")
+            print(
+                f"Cover font: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}"
+            )
         elif check_name == "toc":
             toc_order = check_result.get("order", {})
             toc_format = check_result.get("format", {})
             toc_numbering = check_result.get("numbering", {})
             toc_page = check_result.get("page_accuracy", {})
             print(f"TOC order: {'✓ PASS' if not toc_order.get('found') else '✗ FAIL'}")
-            print(f"TOC format: {'✓ PASS' if not toc_format.get('found') else '✗ FAIL'}")
-            print(f"TOC numbering: {'✓ PASS' if not toc_numbering.get('found') else '✗ FAIL'}")
-            print(f"TOC page accuracy: {'✓ PASS' if not toc_page.get('found') else '✗ FAIL'}")
+            print(
+                f"TOC format: {'✓ PASS' if not toc_format.get('found') else '✗ FAIL'}"
+            )
+            print(
+                f"TOC numbering: {'✓ PASS' if not toc_numbering.get('found') else '✗ FAIL'}"
+            )
+            print(
+                f"TOC page accuracy: {'✓ PASS' if not toc_page.get('found') else '✗ FAIL'}"
+            )
         elif check_name == "figure_list":
             fig_format = check_result.get("format", {})
             fig_numbering = check_result.get("numbering", {})
             fig_page = check_result.get("page_accuracy", {})
-            print(f"Figure list format: {'✓ PASS' if not fig_format.get('found') else '✗ FAIL'}")
-            print(f"Figure list numbering: {'✓ PASS' if not fig_numbering.get('found') else '✗ FAIL'}")
-            print(f"Figure list page accuracy: {'✓ PASS' if not fig_page.get('found') else '✗ FAIL'}")
+            print(
+                f"Figure list format: {'✓ PASS' if not fig_format.get('found') else '✗ FAIL'}"
+            )
+            print(
+                f"Figure list numbering: {'✓ PASS' if not fig_numbering.get('found') else '✗ FAIL'}"
+            )
+            print(
+                f"Figure list page accuracy: {'✓ PASS' if not fig_page.get('found') else '✗ FAIL'}"
+            )
         elif check_name == "table_list":
             tbl_format = check_result.get("format", {})
             tbl_numbering = check_result.get("numbering", {})
             tbl_page = check_result.get("page_accuracy", {})
-            print(f"Table list format: {'✓ PASS' if not tbl_format.get('found') else '✗ FAIL'}")
-            print(f"Table list numbering: {'✓ PASS' if not tbl_numbering.get('found') else '✗ FAIL'}")
-            print(f"Table list page accuracy: {'✓ PASS' if not tbl_page.get('found') else '✗ FAIL'}")
+            print(
+                f"Table list format: {'✓ PASS' if not tbl_format.get('found') else '✗ FAIL'}"
+            )
+            print(
+                f"Table list numbering: {'✓ PASS' if not tbl_numbering.get('found') else '✗ FAIL'}"
+            )
+            print(
+                f"Table list page accuracy: {'✓ PASS' if not tbl_page.get('found') else '✗ FAIL'}"
+            )
         elif check_name == "paragraphs":
-            print(f"Paragraphs: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}")
+            print(
+                f"Paragraphs: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}"
+            )
         elif check_name == "headers":
             headers_consistency = check_result.get("consistency", {})
-            print(f"Header consistency: {'✓ PASS' if headers_consistency.get('consistent') else '✗ FAIL'}")
+            print(
+                f"Header consistency: {'✓ PASS' if headers_consistency.get('consistent') else '✗ FAIL'}"
+            )
         elif check_name == "footers":
             footers_consistency = check_result.get("consistency", {})
-            print(f"Footer consistency: {'✓ PASS' if footers_consistency.get('consistent') else '✗ FAIL'}")
+            print(
+                f"Footer consistency: {'✓ PASS' if footers_consistency.get('consistent') else '✗ FAIL'}"
+            )
         elif check_name == "figures":
-            print(f"Figure empty lines: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}")
+            print(
+                f"Figure empty lines: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}"
+            )
         elif check_name == "captions":
-            print(f"Caption alignment: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}")
+            print(
+                f"Caption alignment: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}"
+            )
         elif check_name == "references":
-            print(f"References check: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}")
+            print(
+                f"References check: {'✓ PASS' if not check_result.get('found') else '✗ FAIL'}"
+            )
 
     issues = []
     for check_name in checks_to_run:
@@ -370,9 +416,13 @@ def main():
             if fig_format.get("found"):
                 issues.append(f"Figure list format: {fig_format.get('message', 'N/A')}")
             if fig_numbering.get("found"):
-                issues.append(f"Figure list numbering: {fig_numbering.get('message', 'N/A')}")
+                issues.append(
+                    f"Figure list numbering: {fig_numbering.get('message', 'N/A')}"
+                )
             if fig_page.get("found"):
-                issues.append(f"Figure list page accuracy: {fig_page.get('message', 'N/A')}")
+                issues.append(
+                    f"Figure list page accuracy: {fig_page.get('message', 'N/A')}"
+                )
         elif check_name == "table_list":
             tbl_format = check_result.get("format", {})
             tbl_numbering = check_result.get("numbering", {})
@@ -380,9 +430,13 @@ def main():
             if tbl_format.get("found"):
                 issues.append(f"Table list format: {tbl_format.get('message', 'N/A')}")
             if tbl_numbering.get("found"):
-                issues.append(f"Table list numbering: {tbl_numbering.get('message', 'N/A')}")
+                issues.append(
+                    f"Table list numbering: {tbl_numbering.get('message', 'N/A')}"
+                )
             if tbl_page.get("found"):
-                issues.append(f"Table list page accuracy: {tbl_page.get('message', 'N/A')}")
+                issues.append(
+                    f"Table list page accuracy: {tbl_page.get('message', 'N/A')}"
+                )
         elif check_name == "headers":
             headers_consistency = check_result.get("consistency", {})
             if not headers_consistency.get("consistent"):
@@ -419,16 +473,20 @@ def main():
             footers_result = results.get("footers", {})
             headers = headers_result.get("headers", []) if headers_result else []
             footers = footers_result.get("footers", []) if footers_result else []
-            consistency = headers_result.get("consistency", {}) if headers_result else {}
-            footer_consistency = footers_result.get("consistency", {}) if footers_result else {}
+            consistency = (
+                headers_result.get("consistency", {}) if headers_result else {}
+            )
+            footer_consistency = (
+                footers_result.get("consistency", {}) if footers_result else {}
+            )
 
             # Ensure structure has required keys
             if structure is None:
-                structure = {'headers': [], 'footers': []}
-            elif 'headers' not in structure:
-                structure['headers'] = []
-            elif 'footers' not in structure:
-                structure['footers'] = []
+                structure = {"headers": [], "footers": []}
+            elif "headers" not in structure:
+                structure["headers"] = []
+            elif "footers" not in structure:
+                structure["footers"] = []
 
             md_report = generate_markdown_report(
                 docx_path,
@@ -449,7 +507,7 @@ def main():
                 report_path.parent.mkdir(parents=True, exist_ok=True)
             else:
                 report_path = docx_path.parent / f"{docx_path.stem}_格式检查报告.md"
-            
+
             with open(report_path, "w", encoding="utf-8") as f:
                 f.write(md_report)
             print(f"✓ Markdown report saved to: {report_path}")
