@@ -133,9 +133,9 @@ _RULE_CLASSES: Dict[str, Type[Rule]] = {
 def build_rules(config: dict) -> List[Rule]:
     """根据配置构建规则列表
     
-    从配置文件的 rules 节读取规则定义，动态创建规则实例
+    支持两种配置格式：
     
-    配置格式：
+    1. 传统格式（命令式）:
     rules:
       - id: "COV-001"
         enabled: true
@@ -143,7 +143,34 @@ def build_rules(config: dict) -> List[Rule]:
           description: "文档必须包含封面"
           required: true
           keywords: ["题目", "标题", "作者"]
-          check_first_n_blocks: 5
+    
+    2. 声明式格式:
+    document:
+      defaults:
+        font_size: 10.5pt
+      structure:
+        - type: paragraph
+          name: 标题
+          content: {...}
+          font: {...}
+          paragraph: {...}
+    
+    Args:
+        config: 配置字典
+        
+    Returns:
+        规则实例列表
+    """
+    # 检查是否是声明式配置
+    if "document" in config:
+        return _build_rules_from_declarative(config)
+    
+    # 传统配置格式
+    return _build_rules_from_legacy(config)
+
+
+def _build_rules_from_legacy(config: dict) -> List[Rule]:
+    """从传统配置格式构建规则
     
     Args:
         config: 配置字典
@@ -197,6 +224,33 @@ def build_rules(config: dict) -> List[Rule]:
             continue
 
     return rules
+
+
+def _build_rules_from_declarative(config: dict) -> List[Rule]:
+    """从声明式配置构建规则
+    
+    Args:
+        config: 配置字典（包含 document 节）
+        
+    Returns:
+        规则实例列表
+    """
+    from script.core.rule_generator import generate_rules_from_config
+    
+    try:
+        rules = generate_rules_from_config(config)
+        
+        # 如果配置中还包含额外的传统格式规则，也加载它们
+        if "rules" in config:
+            legacy_rules = _build_rules_from_legacy(config)
+            rules.extend(legacy_rules)
+        
+        return rules
+    except Exception as e:
+        print(f"Error building rules from declarative config: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
 
 
 def _filter_kwargs(cls: Type[Any], params: dict) -> dict:

@@ -190,6 +190,10 @@ class ConfigLoader:
     def _validate_config(self):
         """
         Validate configuration structure.
+        
+        Supports two formats:
+        1. Legacy format: contains "rules" or "checks" section
+        2. Declarative format: contains "document" section
 
         Raises:
             ConfigError: If configuration is invalid.
@@ -197,8 +201,14 @@ class ConfigLoader:
         if not isinstance(self.config, dict):
             raise ConfigError("Configuration must be a dictionary")
 
+        # Check if it's declarative format
+        if "document" in self.config:
+            self._validate_declarative_config()
+            return
+
+        # Check legacy format
         if "rules" not in self.config and "checks" not in self.config:
-            raise ConfigError("Configuration must contain 'rules' section")
+            raise ConfigError("Configuration must contain 'rules', 'checks', or 'document' section")
 
         if "rules" in self.config and not isinstance(self.config["rules"], list):
             raise ConfigError("'rules' section must be a list")
@@ -209,6 +219,38 @@ class ConfigLoader:
         if "checks" in self.config:
             self._validate_checks_section()
             self._validate_check_items()
+    
+    def _validate_declarative_config(self):
+        """
+        Validate declarative configuration structure.
+        
+        Declarative config format:
+        document:
+          defaults: {...}
+          structure: [...]
+          headings: {...}
+          references: {...}
+
+        Raises:
+            ConfigError: If declarative configuration is invalid.
+        """
+        document_config = self.config.get("document", {})
+        if not isinstance(document_config, dict):
+            raise ConfigError("'document' section must be a dictionary")
+        
+        # Optional: validate structure
+        if "structure" in document_config:
+            structure = document_config["structure"]
+            if not isinstance(structure, list):
+                raise ConfigError("'document.structure' must be a list")
+    
+    def is_declarative_format(self) -> bool:
+        """Check if configuration uses declarative format.
+        
+        Returns:
+            True if declarative format, False if legacy format
+        """
+        return "document" in self.config
 
     def _validate_checks_section(self):
         """Validate checks section."""
