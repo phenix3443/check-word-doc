@@ -1,0 +1,98 @@
+# 展示如何使用通用规则类（format_rules.py）的示例配置
+# 这不是通用规则！这是展示如何使用 FontStyleRule、ParagraphFormatRule 等新增规则类
+
+description: "示例：使用 format_rules.py 中新增的规则类（字体、格式检查）"
+
+rules:
+  # ============================================================================
+  # 说明：
+  # 本配置展示如何使用 format_rules.py 中新增的规则类
+  # 这些规则类用于检查字体、格式等，是对 base.yaml 的补充
+  # ============================================================================
+  
+  # ============================================================================
+  # 1. 使用 FontStyleRule 检查字体样式
+  # ============================================================================
+  
+  - id: "FONT001"
+    enabled: true
+    params:
+      description: "封面标题必须使用黑体3号加粗"
+      target_blocks: [0]  # 只检查第一个block
+      expected_font_name: "黑体"
+      expected_font_size: 203200  # 3号 = 16pt = 203200 EMU
+      expected_bold: true
+  
+  - id: "HDG002"
+    enabled: true
+    params:
+      description: "一级标题必须使用宋体4号"
+      target_styles: ["Heading 2"]  # 数据论文模板中 Heading 2 是一级标题
+      expected_font_name: "宋体"
+      expected_font_size: 177800  # 4号 = 14pt
+      font_name_alternatives: ["Times New Roman"]
+  
+  # ============================================================================
+  # 2. 使用 ParagraphFormatRule 检查段落格式
+  # ============================================================================
+  
+  - id: "PAR001"
+    enabled: true
+    params:
+      description: "正文段落行距必须为1.5倍"
+      target_styles: ["Normal", "Body Text"]
+      line_spacing: 1.5
+      line_spacing_rule: "multiple"
+      line_spacing_tolerance: 0.05
+  
+  # ============================================================================
+  # 3. 使用 MatchingRule 检查文本模式
+  # ============================================================================
+  
+  - id: "UNIT001"
+    enabled: true
+    params:
+      description: "数值和单位间应有空格"
+      pattern: "\\d+\\s+[a-zA-Z]+"
+      match_type: "contains"
+      target_styles: ["Normal", "Body Text"]
+      case_sensitive: false
+
+# ============================================================================
+# 全局设置
+# ============================================================================
+settings:
+  strict_mode: false
+  
+  metadata:
+    template_name: "format_rules.py 规则类使用示例"
+    version: "2.0"
+    last_updated: "2026-01-14"
+    description: "展示如何使用 format_rules.py 中的新增规则类（字体、格式检查）"
+
+# ============================================================================
+# 说明
+# ============================================================================
+# 
+# 1. 本配置不是"通用规则"！
+#    真正的通用规则在 base.yaml 中（适用于所有文档的基础检查）
+#
+# 2. 本配置是"规则类使用示例"
+#    展示如何使用 format_rules.py 中新增的规则类：
+#    - FontStyleRule：检查字体、字号、加粗等
+#    - ParagraphFormatRule：检查行距、对齐、缩进等
+#    - MatchingRule：检查文本模式
+#    - SequenceRule：检查编号连续性
+#
+# 3. 实际使用时，应该：
+#    - 导入 base.yaml（通用规则）
+#    - 添加特定于文档类型的规则（如字体、格式要求）
+#
+# 示例：
+#   import:
+#     - "base.yaml"  # 导入所有文档都需要的通用规则
+#   
+#   rules:
+#     - id: "FONT001"  # 添加文档特定的格式要求
+#       params: ...
+#

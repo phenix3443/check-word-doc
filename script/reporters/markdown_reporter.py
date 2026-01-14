@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import asdict
 from typing import List
 
-from core.model import Issue
+from script.core.model import Issue
 
 
 def render_markdown(issues: List[Issue]) -> str:

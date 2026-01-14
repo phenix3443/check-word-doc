@@ -3,12 +3,12 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from config_loader import ConfigLoader
+from script.config_loader import ConfigLoader
 
-from core.engine import DocxLint
-from reporters.json_reporter import render_json
-from reporters.markdown_reporter import render_markdown
-from rules.registry import build_rules
+from script.core.engine import DocxLint
+from script.reporters.json_reporter import render_json
+from script.reporters.markdown_reporter import render_markdown
+from script.rules.registry import build_rules
 
 
 def parse_args() -> argparse.Namespace:

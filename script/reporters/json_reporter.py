@@ -4,7 +4,7 @@ import json
 from dataclasses import asdict
 from typing import List
 
-from core.model import Issue
+from script.core.model import Issue
 
 
 def render_json(issues: List[Issue]) -> str:

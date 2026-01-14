@@ -1,58 +1,9 @@
 ## 文档结构基线规则
+##
+## 注意：结构规则（如封面、目录等）因文档类型而异，不是所有文档都需要
+## 因此 structure.yaml 中不再包含任何规则
+## 这些规则应该在具体的文档模板配置中定义（如 data_paper_template.yaml）
+##
 version: "vnext"
 
-rules:
-  - id: "COV001"
-    enabled: true
-    params:
-      description: "文档必须包含封面"
-      required: true
-
-  - id: "TOC001"
-    enabled: true
-    params:
-      description: "文档必须包含目录"
-      required: true
-      title_text: "目录"
-      style_prefixes: ["TOC"]
-
-  - id: "TOC002"
-    enabled: true
-    params:
-      description: "目录页码必须连续"
-      check_continuity: true
-      style_prefixes: ["TOC"]
-
-  - id: "TOC003"
-    enabled: true
-    params:
-      description: "目录中各级 toc 的页码必须与实际情况一致"
-      check_page_accuracy: true
-      style_prefixes: ["TOC"]
-      heading_styles: ["Heading 1", "Heading 2", "Heading 3", "标题 1", "标题 2", "标题 3"]
-
-  - id: "FIG002"
-    enabled: true
-    params:
-      description: "如果存在插图目录，页码必须连续"
-      check_continuity: true
-      title_text: "插图目录"
-      style_prefixes: ["图目录", "插图目录"]
-
-  - id: "FIG003"
-    enabled: true
-    params:
-      description: "插图目录中各个图片的页码必须和实际情况一致"
-      check_page_accuracy: true
-      title_text: "插图目录"
-      style_prefixes: ["图目录", "插图目录"]
-      caption_styles: ["Caption", "题注", "图题"]
-
-  - id: "TBL003"
-    enabled: true
-    params:
-      description: "附表目录的页码必须和实际情况一致"
-      check_page_accuracy: true
-      title_text: "附表目录"
-      style_prefixes: ["表目录", "附表目录"]
-      caption_styles: ["Caption", "题注", "表题"]
+rules: []

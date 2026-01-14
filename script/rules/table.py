@@ -5,9 +5,9 @@ from dataclasses import dataclass, field
 from typing import Dict
 from typing import List, Optional
 
-from core.context import Context
-from core.model import Block, Issue, Location, Severity, ParagraphBlock, TableBlock
-from core.rule import FinalizeRule, Rule
+from script.core.context import Context
+from script.core.model import Block, Issue, Location, Severity, ParagraphBlock, TableBlock
+from script.core.rule import FinalizeRule, Rule
 
 
 def _table_hint(table_block: TableBlock) -> str:

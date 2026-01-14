@@ -7,6 +7,27 @@ poetry.lock
 __pycache__/
 *.py[cod]
 *$py.class
+
+# Poetry
+poetry.lock
+.venv/
+dist/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test outputs
+test_reports/
+*.md.tmp
 *.so
 .Python
 build/

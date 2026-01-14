@@ -3,9 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List
 
-from core.context import Context
-from core.model import Block, Issue, Location, Severity
-from core.rule import Rule
+from script.core.context import Context
+from script.core.model import Block, Issue, Location, Severity
+from script.core.rule import Rule
 
 
 @dataclass
