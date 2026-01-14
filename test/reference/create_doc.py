@@ -269,7 +269,7 @@ if __name__ == "__main__":
         
         print("\n✓ 参考文献测试文档创建成功！")
         print("现在可以运行以下命令测试:")
-        print("poetry run python script/check.py --check references --config config/basic.yaml test/reference/test.docx")
+        print("poetry run python script/check.py --check references --config config/base.yaml test/reference/test.docx")
         
     except Exception as e:
         print(f"✗ 创建测试文档失败: {e}")

@@ -61,8 +61,8 @@ def test_paragraphs_functionality():
     print("=" * 60)
     
     try:
-        # 使用 basic.yaml 配置文件
-        config_path = os.path.join(os.path.dirname(__file__), '..', '..', 'config', 'basic.yaml')
+        # 使用 base.yaml 配置文件
+        config_path = os.path.join(os.path.dirname(__file__), '..', '..', 'config', 'base.yaml')
         test_doc = os.path.join(os.path.dirname(__file__), "test.docx")
         
         print(f"配置文件: {os.path.relpath(config_path)}")
@@ -195,7 +195,7 @@ def show_usage():
     print("   poetry run python test/paragraphs/paragraphs_check.py")
     print()
     print("3. 运行完整检查:")
-    print("   poetry run python script/check.py --check paragraphs --config config/basic.yaml test/paragraphs/test.docx")
+    print("   poetry run python script/check.py --check paragraphs --config config/base.yaml test/paragraphs/test.docx")
 
 if __name__ == "__main__":
     print("段落检查功能测试")

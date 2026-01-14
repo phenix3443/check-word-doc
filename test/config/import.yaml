@@ -2,7 +2,7 @@
 # 测试配置文件导入功能
 
 # 导入基本配置
-import: basic.yaml
+import: base.yaml
 
 # 覆盖部分配置
 structure:

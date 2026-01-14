@@ -14,7 +14,7 @@ def test_basic_config_loading():
     """测试基本配置文件加载"""
     print("测试基本配置文件加载...")
     
-    config_path = os.path.join(os.path.dirname(__file__), "basic.yaml")
+    config_path = os.path.join(os.path.dirname(__file__), "base.yaml")
     
     try:
         config_loader = ConfigLoader(config_path)
@@ -124,7 +124,7 @@ def test_config_validation():
     """测试配置验证功能"""
     print("\n测试配置验证功能...")
     
-    config_path = os.path.join(os.path.dirname(__file__), "basic.yaml")
+    config_path = os.path.join(os.path.dirname(__file__), "base.yaml")
     
     try:
         config_loader = ConfigLoader(config_path)
@@ -152,7 +152,7 @@ def test_config_access_methods():
     """测试配置访问方法"""
     print("\n测试配置访问方法...")
     
-    config_path = os.path.join(os.path.dirname(__file__), "basic.yaml")
+    config_path = os.path.join(os.path.dirname(__file__), "base.yaml")
     
     try:
         config_loader = ConfigLoader(config_path)
@@ -187,7 +187,7 @@ def show_usage():
     print("   poetry run python test/config/config_check.py")
     print()
     print("2. 测试配置文件:")
-    print("   - basic.yaml: 基本配置测试")
+    print("   - base.yaml: 基本配置测试")
     print("   - invalid.yaml: 无效配置测试")
     print("   - import.yaml: 配置导入测试")
     print()

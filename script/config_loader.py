@@ -42,14 +42,14 @@ class ConfigLoader:
         """Get path to basic configuration file."""
         script_dir = Path(__file__).parent
         project_root = script_dir.parent
-        return project_root / "config" / "basic.yaml"
+        return project_root / "config" / "base.yaml"
 
     def _resolve_import_path(self, import_path: str, current_file: Path) -> Path:
         """
         Resolve import path relative to current file only.
 
         Args:
-            import_path: Import path (e.g., "basic.yaml" or "../config/basic.yaml")
+            import_path: Import path (e.g., "base.yaml" or "../config/base.yaml")
             current_file: Path to the current YAML file
 
         Returns:
@@ -149,6 +149,9 @@ class ConfigLoader:
         """
         result = base.copy()
         for key, value in override.items():
+            if key == "rules" and isinstance(result.get(key), list) and isinstance(value, list):
+                result[key] = list(result.get(key) or []) + list(value or [])
+                continue
             if (
                 key in result
                 and isinstance(result[key], dict)
@@ -162,7 +165,7 @@ class ConfigLoader:
     def load(self) -> Dict[str, Any]:
         """
         Load configuration from file.
-        Supports YAML import syntax: add "import: basic.yaml" at the top of config file.
+        Supports YAML import syntax: add "import: base.yaml" at the top of config file.
         Configuration file path must be provided via config_path parameter.
 
         Returns:
@@ -194,14 +197,18 @@ class ConfigLoader:
         if not isinstance(self.config, dict):
             raise ConfigError("Configuration must be a dictionary")
 
-        if "checks" not in self.config:
-            raise ConfigError("Configuration must contain 'checks' section")
+        if "rules" not in self.config and "checks" not in self.config:
+            raise ConfigError("Configuration must contain 'rules' section")
 
-        if not isinstance(self.config["checks"], (list, dict)):
+        if "rules" in self.config and not isinstance(self.config["rules"], list):
+            raise ConfigError("'rules' section must be a list")
+
+        if "checks" in self.config and not isinstance(self.config["checks"], (list, dict)):
             raise ConfigError("'checks' section must be a list or dictionary")
 
-        self._validate_checks_section()
-        self._validate_check_items()
+        if "checks" in self.config:
+            self._validate_checks_section()
+            self._validate_check_items()
 
     def _validate_checks_section(self):
         """Validate checks section."""

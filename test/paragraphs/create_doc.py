@@ -182,6 +182,6 @@ if __name__ == "__main__":
     if create_test_document():
         print("\n✓ 测试文档创建成功！")
         print("现在可以运行以下命令测试:")
-        print("poetry run python script/check.py --check paragraphs --config config/basic.yaml test/paragraphs/test.docx")
+        print("poetry run python script/check.py --check paragraphs --config config/base.yaml test/paragraphs/test.docx")
     else:
         print("\n✗ 测试文档创建失败！")

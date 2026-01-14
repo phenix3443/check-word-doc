@@ -15,7 +15,7 @@ def test_basic_structure_check():
     print("测试基本结构检查...")
     
     test_doc = os.path.join(os.path.dirname(__file__), "basic.docx")
-    config_path = os.path.join(os.path.dirname(__file__), '..', '..', 'config', 'basic.yaml')
+    config_path = os.path.join(os.path.dirname(__file__), '..', '..', 'config', 'base.yaml')
     
     if not os.path.exists(test_doc):
         print(f"  ✗ 测试文档不存在: {test_doc}")
@@ -140,7 +140,7 @@ if __name__ == "__main__":
     print("   poetry run python test/struct/create_scientific_report.py")
     print()
     print("3. 运行结构检查:")
-    print("   poetry run python script/check.py --check structure --config config/basic.yaml test/struct/basic.docx")
+    print("   poetry run python script/check.py --check structure --config config/base.yaml test/struct/basic.docx")
     print("   poetry run python script/check.py --check structure --config 2025/task/科技报告/科技报告-2025.yaml test/struct/report.docx")
     print()
     print("✅ 测试完成")

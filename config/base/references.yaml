@@ -1,0 +1,27 @@
+## 参考文献基线规则
+version: "vnext"
+
+rules:
+  - id: "REF001"
+    enabled: true
+    params:
+      description: "文档必须包含参考文献章节"
+      required: true
+      heading_text: "参考文献"
+
+  - id: "REF002"
+    enabled: true
+    params:
+      description: "参考文献必须在正文中通过上标引用"
+      check_superscript_citation: true
+      reference_heading: "参考文献"
+      citation_pattern: "^\\[\\d+(-\\d+)?(,\\s*\\d+)*\\]$"
+
+  - id: "REF003"
+    enabled: true
+    params:
+      description: "参考文献必须是一级标题"
+      check_heading_level: true
+      reference_heading: "参考文献"
+      required_level: 1
+      level1_styles: ["Heading 1", "标题 1"]

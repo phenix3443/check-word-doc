@@ -246,6 +246,6 @@ if __name__ == "__main__":
     if create_complete_document():
         print("\n✓ 完整结构测试文档创建成功！")
         print("现在可以运行以下命令测试:")
-        print("poetry run python script/check.py --check structure --config config/basic.yaml test/struct/basic.docx")
+        print("poetry run python script/check.py --check structure --config config/base.yaml test/struct/basic.docx")
     else:
         print("\n✗ 完整结构测试文档创建失败！")
