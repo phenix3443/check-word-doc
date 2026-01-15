@@ -202,11 +202,78 @@ class ConfigLoader:
         if not isinstance(document_config, dict):
             raise ConfigError("'document' section must be a dictionary")
 
-        # Optional: validate structure
+        # 验证 classifiers（可选）
+        if "classifiers" in document_config:
+            self._validate_classifiers(document_config["classifiers"])
+        
+        # 验证 styles（可选）
+        if "styles" in document_config:
+            self._validate_styles(document_config["styles"])
+        
+        # 验证 defaults（可选）
+        if "defaults" in document_config:
+            if not isinstance(document_config["defaults"], dict):
+                raise ConfigError("'document.defaults' must be a dictionary")
+
+        # Optional: validate legacy structure
         if "structure" in document_config:
             structure = document_config["structure"]
             if not isinstance(structure, list):
                 raise ConfigError("'document.structure' must be a list")
+    
+    def _validate_classifiers(self, classifiers: Any):
+        """验证 classifiers 配置
+        
+        Args:
+            classifiers: classifiers 配置
+            
+        Raises:
+            ConfigError: 如果格式不正确
+        """
+        if not isinstance(classifiers, list):
+            raise ConfigError("'document.classifiers' must be a list")
+        
+        for i, rule in enumerate(classifiers):
+            if not isinstance(rule, dict):
+                raise ConfigError(f"Classifier rule {i} must be a dictionary")
+            
+            if "class" not in rule:
+                raise ConfigError(f"Classifier rule {i} must have a 'class' field")
+            
+            if "match" not in rule:
+                raise ConfigError(f"Classifier rule {i} must have a 'match' field")
+            
+            if not isinstance(rule["match"], dict):
+                raise ConfigError(f"Classifier rule {i}: 'match' must be a dictionary")
+    
+    def _validate_styles(self, styles: Any):
+        """验证 styles 配置
+        
+        Args:
+            styles: styles 配置
+            
+        Raises:
+            ConfigError: 如果格式不正确
+        """
+        if not isinstance(styles, dict):
+            raise ConfigError("'document.styles' must be a dictionary")
+        
+        for class_selector, style_def in styles.items():
+            # 检查 class 选择器格式（应该以 . 开头）
+            if not class_selector.startswith('.'):
+                raise ConfigError(
+                    f"Style selector '{class_selector}' must start with '.' (e.g., '.title')"
+                )
+            
+            if not isinstance(style_def, dict):
+                raise ConfigError(f"Style definition for '{class_selector}' must be a dictionary")
+            
+            # 验证字体和段落配置（如果存在）
+            if "font" in style_def and not isinstance(style_def["font"], dict):
+                raise ConfigError(f"'{class_selector}.font' must be a dictionary")
+            
+            if "paragraph" in style_def and not isinstance(style_def["paragraph"], dict):
+                raise ConfigError(f"'{class_selector}.paragraph' must be a dictionary")
 
 
 def load_config(config_path: str) -> Dict[str, Any]:

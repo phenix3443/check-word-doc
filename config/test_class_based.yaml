@@ -1,0 +1,110 @@
+document:
+  # 全局默认样式
+  defaults:
+    font:
+      size: 小四
+      name_eastasia: 宋体
+      name_ascii: "Times New Roman"
+    paragraph:
+      line_spacing: 1.5倍
+      alignment: 两端对齐
+  
+  # 元素识别规则
+  classifiers:
+    # 标题（第一段）
+    - class: title
+      match:
+        type: paragraph
+        position: 0
+    
+    # 作者列表（第二段，包含逗号）
+    - class: author-list
+      match:
+        type: paragraph
+        position: 1
+        pattern: ".*[,，].*"
+    
+    # 摘要（以"摘要："开头）
+    - class: abstract
+      match:
+        type: paragraph
+        pattern: "^摘要[:：]"
+    
+    # 作者单位（在 author-list 和 abstract 之间，以数字开头）
+    - class: author-affiliation
+      match:
+        type: paragraph
+        range:
+          after: {class: author-list}
+          before: {class: abstract}
+        pattern: "^\\d+\\."
+    
+    # 通信作者（在 author-list 和 abstract 之间，以*开头）
+    - class: corresponding-author
+      match:
+        type: paragraph
+        range:
+          after: {class: author-list}
+          before: {class: abstract}
+        pattern: "^\\*"
+    
+    # 关键词（以"关键词："开头）
+    - class: keywords
+      match:
+        type: paragraph
+        pattern: "^关键词[:：]"
+  
+  # 样式定义
+  styles:
+    # 标题样式
+    .title:
+      font:
+        name_eastasia: 黑体
+        name_ascii: "Times New Roman"
+        size: 三号
+        bold: false
+      paragraph:
+        alignment: 居中
+        space_before: 0.5行
+        space_after: 0.5行
+    
+    # 作者列表样式
+    .author-list:
+      font:
+        name_eastasia: 楷体
+        name_ascii: "Times New Roman"
+        size: 小四
+      paragraph:
+        alignment: 居中
+    
+    # 作者单位样式
+    .author-affiliation:
+      font:
+        size: 五号
+      paragraph:
+        alignment: 居中
+    
+    # 通信作者样式
+    .corresponding-author:
+      font:
+        size: 五号
+      paragraph:
+        alignment: 居中
+    
+    # 摘要样式
+    .abstract:
+      font:
+        name_eastasia: 黑体
+        size: 小四
+        bold: true
+      paragraph:
+        alignment: 左对齐
+        first_line_indent: 0字符
+    
+    # 关键词样式
+    .keywords:
+      font:
+        size: 小四
+      paragraph:
+        alignment: 左对齐
+        first_line_indent: 0字符
