@@ -54,38 +54,33 @@ document:
       paragraph:
         alignment: 居中
 
-    # 中文摘要标题
-    .abstract-title:
-      font:
-        name_eastasia: 黑体
-        size: 小四
-        bold: true
+    # 中文摘要（完整段落，以"摘要："开头）
+    # 注意：段落内"摘要："三字为黑体加粗，但我们只检查段落级别格式
+    .abstract:
       paragraph:
-        alignment: 左对齐
+        line_spacing: 1.15倍
+        alignment: 两端对齐
 
-    # 关键词
+    # 关键词（完整段落，以"关键词："开头）
+    # 注意：段落内"关键词："三字为黑体加粗，但我们只检查段落级别格式
     .keywords:
-      font:
-        size: 小四
       paragraph:
-        alignment: 左对齐
+        line_spacing: 1.15倍
+        alignment: 两端对齐
 
-    # 英文摘要标题
-    .abstract-title-en:
-      font:
-        name_eastasia: 黑体
-        name_ascii: "Times New Roman"
-        size: 小四
-        bold: true
+    # 英文摘要（完整段落，以"Abstract:"开头）
+    # 注意：段落内"Abstract:"为黑体加粗，但我们只检查段落级别格式
+    .abstract-en:
       paragraph:
-        alignment: 左对齐
+        line_spacing: 1.15倍
+        alignment: 两端对齐
 
-    # 英文关键词
+    # 英文关键词（完整段落，以"Keywords:"开头）
+    # 注意：段落内"Keywords:"为黑体加粗，但我们只检查段落级别格式
     .keywords-en:
-      font:
-        size: 小四
       paragraph:
-        alignment: 左对齐
+        line_spacing: 1.15倍
+        alignment: 两端对齐
 
     # 一级标题
     .heading-1:

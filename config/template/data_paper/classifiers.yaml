@@ -35,25 +35,25 @@ document:
             position: last
             pattern: "^\\*"
 
-    # 3. 中文摘要标题（以"摘要："开头，中文冒号）
-    - class: abstract-title
+    # 3. 中文摘要（以"摘要："开头的段落，包含完整摘要内容）
+    - class: abstract
       match:
         type: paragraph
         pattern: "^摘要："
 
-    # 4. 关键词（以"关键词："开头，中文冒号）
+    # 4. 关键词（以"关键词："开头的段落，包含完整关键词列表）
     - class: keywords
       match:
         type: paragraph
         pattern: "^关键词："
 
-    # 5. 英文摘要标题（以"Abstract:"开头）
-    - class: abstract-title-en
+    # 5. 英文摘要（以"Abstract:"开头的段落，包含完整摘要内容）
+    - class: abstract-en
       match:
         type: paragraph
         pattern: "^Abstract:"
 
-    # 6. 英文关键词（以"Keywords:"开头）
+    # 6. 英文关键词（以"Keywords:"开头的段落，包含完整关键词列表）
     - class: keywords-en
       match:
         type: paragraph
