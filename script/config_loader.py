@@ -245,6 +245,109 @@ class ConfigLoader:
             
             if not isinstance(rule["match"], dict):
                 raise ConfigError(f"Classifier rule {i}: 'match' must be a dictionary")
+            
+            # 验证 position 字段（如果存在）
+            match_config = rule["match"]
+            if "position" in match_config:
+                self._validate_position(match_config["position"], f"Classifier rule {i} (class: {rule['class']})")
+            
+            # 验证 children 规则（如果存在）
+            if "children" in rule:
+                if not isinstance(rule["children"], list):
+                    raise ConfigError(f"Classifier rule {i} (class: {rule['class']}): 'children' must be a list")
+                
+                for j, child_rule in enumerate(rule["children"]):
+                    if not isinstance(child_rule, dict):
+                        raise ConfigError(f"Classifier rule {i} (class: {rule['class']}): child rule {j} must be a dictionary")
+                    
+                    if "class" not in child_rule:
+                        raise ConfigError(f"Classifier rule {i} (class: {rule['class']}): child rule {j} must have a 'class' field")
+                    
+                    if "match" not in child_rule:
+                        raise ConfigError(f"Classifier rule {i} (class: {rule['class']}): child rule {j} must have a 'match' field")
+                    
+                    if not isinstance(child_rule["match"], dict):
+                        raise ConfigError(f"Classifier rule {i} (class: {rule['class']}): child rule {j}: 'match' must be a dictionary")
+                    
+                    # 验证子规则的 position
+                    if "position" in child_rule["match"]:
+                        self._validate_position(
+                            child_rule["match"]["position"],
+                            f"Classifier rule {i} (class: {rule['class']}), child rule {j} (class: {child_rule['class']})"
+                        )
+    
+    def _validate_position(self, position: Any, context: str):
+        """验证 position 配置
+        
+        Args:
+            position: position 配置
+            context: 上下文信息（用于错误消息）
+            
+        Raises:
+            ConfigError: 如果格式不正确
+        """
+        # 新语法：position 是一个对象 { type, index }
+        if isinstance(position, dict):
+            if "type" not in position:
+                raise ConfigError(f"{context}: position 对象必须包含 'type' 字段")
+            
+            if "index" not in position:
+                raise ConfigError(f"{context}: position 对象必须包含 'index' 字段")
+            
+            pos_type = position["type"]
+            
+            # 验证 type 字段只能是 absolute 或 relative
+            if pos_type not in ["absolute", "relative"]:
+                raise ConfigError(
+                    f"{context}: position.type 必须是 'absolute' 或 'relative'，"
+                    f"当前值为 '{pos_type}'"
+                )
+            
+            # 验证 index 字段
+            pos_index = position["index"]
+            
+            if pos_type == "absolute":
+                # 绝对定位：index 应该是数字或 first/last
+                if not isinstance(pos_index, (int, str)):
+                    raise ConfigError(
+                        f"{context}: position.index (absolute) 必须是数字或字符串 (first/last)，"
+                        f"当前类型为 {type(pos_index).__name__}"
+                    )
+                if isinstance(pos_index, str) and pos_index not in ["first", "last"]:
+                    # 允许数字字符串
+                    try:
+                        int(pos_index)
+                    except ValueError:
+                        raise ConfigError(
+                            f"{context}: position.index (absolute) 字符串值必须是 'first', 'last' 或数字，"
+                            f"当前值为 '{pos_index}'"
+                        )
+            
+            elif pos_type == "relative":
+                # 相对定位：index 可以是 first/last/middle 或区间表达式
+                if not isinstance(pos_index, (int, str)):
+                    raise ConfigError(
+                        f"{context}: position.index (relative) 必须是数字或字符串，"
+                        f"当前类型为 {type(pos_index).__name__}"
+                    )
+                
+                if isinstance(pos_index, str):
+                    # 检查是否是有效的相对位置或区间表达式
+                    if pos_index not in ["first", "last", "middle"]:
+                        # 检查是否是区间表达式
+                        if not any(c in pos_index for c in '()[]'):
+                            # 不是区间表达式，尝试作为数字
+                            try:
+                                int(pos_index)
+                            except ValueError:
+                                raise ConfigError(
+                                    f"{context}: position.index (relative) 字符串值必须是 "
+                                    f"'first', 'last', 'middle', 数字，或区间表达式 (如 '(a, b)')，"
+                                    f"当前值为 '{pos_index}'"
+                                )
+        
+        # 旧语法：position 是一个简单值（向后兼容，不验证）
+        # 允许任何类型的简单值
     
     def _validate_styles(self, styles: Any):
         """验证 styles 配置
