@@ -85,6 +85,49 @@ document:
         line_spacing: 1.15倍
         alignment: 两端对齐
 
+    # 英文标题
+    .title-en:
+      font:
+        name_ascii: "Times New Roman"
+        size: 三号
+      paragraph:
+        alignment: 居中
+        space_before: 0.5行
+        space_after: 0.5行
+
+    # 英文作者列表
+    .author-list-en:
+      font:
+        name_ascii: "Times New Roman"
+        size: 小四
+      paragraph:
+        alignment: 居中
+
+    # 英文作者单位
+    .author-affiliation-en:
+      font:
+        name_ascii: "Times New Roman"
+        size: 五号
+      paragraph:
+        alignment: 居中
+
+    # 英文通讯作者邮箱
+    .corresponding-author-en:
+      font:
+        name_ascii: "Times New Roman"
+        size: 五号
+      paragraph:
+        alignment: 居中
+
+    # 英文摘要（完整段落，以"Abstract:"开头）
+    .abstract-en:
+      font:
+        name_ascii: "Times New Roman"
+        size: 五号
+      paragraph:
+        line_spacing: 1.15倍
+        alignment: 两端对齐
+
     # 一级标题
     .heading-1:
       font:

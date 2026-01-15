@@ -395,8 +395,9 @@ class Classifier:
                     # 如果是区间表达式，提取其中的 class 引用
                     if isinstance(pos_index, str) and any(c in pos_index for c in '()[]'):
                         # 解析区间表达式：(a, b) 或 [a, b]
+                        # 注意：类名可以包含连字符，如 abstract-en
                         import re
-                        pattern = r'[\[\(]\s*(\w+)\s*,\s*(\w+)\s*[\]\)]'
+                        pattern = r'[\[\(]\s*([\w-]+)\s*,\s*([\w-]+)\s*[\]\)]'
                         match = re.search(pattern, pos_index)
                         if match:
                             anchor1, anchor2 = match.groups()
@@ -740,7 +741,8 @@ class Classifier:
         import re
         
         # 解析区间表达式：([左括号)(锚点1), (锚点2)(右括号)
-        pattern = r'^([\[\(])\s*(\w+)\s*,\s*(\w+)\s*([\]\)])$'
+        # 注意：类名可以包含连字符，如 abstract-en
+        pattern = r'^([\[\(])\s*([\w-]+)\s*,\s*([\w-]+)\s*([\]\)])$'
         match = re.match(pattern, expr.strip())
         
         if not match:
