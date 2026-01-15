@@ -587,11 +587,63 @@ class Classifier:
         if "position" in config:
             position_config = config["position"]
             
-            # 新语法：position 是一个对象 { type: relative, index: first/last/middle }
+            # 新语法：position 是一个对象 { type: relative, index: ... }
             if isinstance(position_config, dict) and "type" in position_config:
                 if position_config["type"] == "relative":
                     position_index = position_config["index"]
-                    matchers.append(RelativePositionInRangeMatcher(position_index, parent_range))
+                    
+                    # 检查是否是区间表达式
+                    if isinstance(position_index, str) and any(c in position_index for c in '()[]'):
+                        # 区间表达式：在 parent_range 中查找引用的 class
+                        # 例如：(author-list, corresponding-author)
+                        import re
+                        pattern = r'[\[\(]\s*(\w+(?:-\w+)*)\s*,\s*(\w+(?:-\w+)*)\s*[\]\)]'
+                        match = re.match(pattern, position_index.strip())
+                        
+                        if match:
+                            class1, class2 = match.groups()
+                            
+                            # 在 parent_range 中查找这两个 class 的块
+                            anchor1 = None
+                            anchor2 = None
+                            
+                            for block in parent_range:
+                                if block.has_class(class1):
+                                    anchor1 = block
+                                if block.has_class(class2):
+                                    anchor2 = block
+                            
+                            # 如果找到了两个锚点，创建范围匹配器
+                            if anchor1 and anchor2:
+                                # 创建一个子范围：anchor1 和 anchor2 之间的块
+                                start_idx = parent_range.index(anchor1)
+                                end_idx = parent_range.index(anchor2)
+                                
+                                # 开区间：不包含锚点本身
+                                sub_range = parent_range[start_idx + 1:end_idx]
+                                
+                                # 使用一个简单的匹配器：检查 block 是否在 sub_range 中
+                                class SubRangeMatcher(Matcher):
+                                    def __init__(self, sub_range):
+                                        self.sub_range = sub_range
+                                    
+                                    def match(self, block, context):
+                                        return block in self.sub_range
+                                
+                                matchers.append(SubRangeMatcher(sub_range))
+                            else:
+                                # 锚点未找到，这个匹配器永远不会匹配
+                                class NeverMatcher(Matcher):
+                                    def match(self, block, context):
+                                        return False
+                                
+                                matchers.append(NeverMatcher())
+                        else:
+                            # 区间表达式格式错误
+                            raise ValueError(f"Invalid range expression: {position_index}")
+                    else:
+                        # 简单位置：first, last, 或数字
+                        matchers.append(RelativePositionInRangeMatcher(position_index, parent_range))
             
             # 旧语法：position 是一个简单值（向后兼容）
             else:

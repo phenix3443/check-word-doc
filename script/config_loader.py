@@ -324,7 +324,7 @@ class ConfigLoader:
                         )
             
             elif pos_type == "relative":
-                # 相对定位：index 可以是 first/last/middle 或区间表达式
+                # 相对定位：index 可以是 first/last 或区间表达式
                 if not isinstance(pos_index, (int, str)):
                     raise ConfigError(
                         f"{context}: position.index (relative) 必须是数字或字符串，"
@@ -333,7 +333,7 @@ class ConfigLoader:
                 
                 if isinstance(pos_index, str):
                     # 检查是否是有效的相对位置或区间表达式
-                    if pos_index not in ["first", "last", "middle"]:
+                    if pos_index not in ["first", "last"]:
                         # 检查是否是区间表达式
                         if not any(c in pos_index for c in '()[]'):
                             # 不是区间表达式，尝试作为数字
@@ -342,7 +342,7 @@ class ConfigLoader:
                             except ValueError:
                                 raise ConfigError(
                                     f"{context}: position.index (relative) 字符串值必须是 "
-                                    f"'first', 'last', 'middle', 数字，或区间表达式 (如 '(a, b)')，"
+                                    f"'first', 'last', 数字，或区间表达式 (如 '(first, last)')，"
                                     f"当前值为 '{pos_index}'"
                                 )
         
