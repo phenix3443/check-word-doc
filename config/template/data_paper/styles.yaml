@@ -32,6 +32,9 @@ document:
         alignment: 居中
 
     # 作者列表
+    # 注意：作者名后的数字和星号应为上标格式（如：王嘉平1*，汪浩2）
+    # 第一作者的数字后必须有星号
+    # 当前系统只检查段落级别样式，不检查 run 级别的上标格式
     .author-list:
       font:
         name_eastasia: 楷体
