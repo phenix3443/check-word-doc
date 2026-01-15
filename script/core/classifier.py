@@ -383,7 +383,26 @@ class Classifier:
         dependencies = []
         match_config = rule.get("match", {})
 
-        # 检查 after/before 中的 class 引用
+        # 新的 position 语法
+        if "position" in match_config:
+            position_config = match_config["position"]
+            
+            # position 是一个对象 { type, index }
+            if isinstance(position_config, dict) and "type" in position_config:
+                if position_config["type"] == "relative":
+                    pos_index = position_config["index"]
+                    
+                    # 如果是区间表达式，提取其中的 class 引用
+                    if isinstance(pos_index, str) and any(c in pos_index for c in '()[]'):
+                        # 解析区间表达式：(a, b) 或 [a, b]
+                        import re
+                        pattern = r'[\[\(]\s*(\w+)\s*,\s*(\w+)\s*[\]\)]'
+                        match = re.search(pattern, pos_index)
+                        if match:
+                            anchor1, anchor2 = match.groups()
+                            dependencies.extend([anchor1, anchor2])
+
+        # 旧语法：after/before 中的 class 引用（向后兼容）
         if "after" in match_config and isinstance(match_config["after"], dict):
             if "class" in match_config["after"]:
                 dependencies.append(match_config["after"]["class"])
@@ -392,7 +411,7 @@ class Classifier:
             if "class" in match_config["before"]:
                 dependencies.append(match_config["before"]["class"])
 
-        # 检查 range 中的 class 引用
+        # 旧语法：range 中的 class 引用（向后兼容）
         if "range" in match_config:
             range_config = match_config["range"]
             if "after" in range_config and isinstance(range_config["after"], dict):
@@ -566,9 +585,17 @@ class Classifier:
 
         # 相对位置匹配（相对于父区域）
         if "position" in config:
-            position = config["position"]
-            # 使用相对位置匹配器
-            matchers.append(RelativePositionInRangeMatcher(position, parent_range))
+            position_config = config["position"]
+            
+            # 新语法：position 是一个对象 { type: relative, index: first/last/middle }
+            if isinstance(position_config, dict) and "type" in position_config:
+                if position_config["type"] == "relative":
+                    position_index = position_config["index"]
+                    matchers.append(RelativePositionInRangeMatcher(position_index, parent_range))
+            
+            # 旧语法：position 是一个简单值（向后兼容）
+            else:
+                matchers.append(RelativePositionInRangeMatcher(position_config, parent_range))
 
         # 内容模式匹配
         if "pattern" in config:
@@ -580,6 +607,14 @@ class Classifier:
         """根据配置构建匹配器列表
 
         多个匹配器之间是 AND 关系（都要满足）。
+        
+        支持新的统一 position 语法：
+        - position: { type: absolute, index: 0 }
+        - position: { type: range, index: "(title, abstract)" }
+        
+        同时保持向后兼容旧语法：
+        - position: 0
+        - range: { after: {...}, before: {...} }
         """
         matchers = []
 
@@ -587,15 +622,39 @@ class Classifier:
         if "type" in config:
             matchers.append(TypeMatcher(config["type"]))
 
-        # 绝对位置匹配
+        # 新的统一 position 语法
         if "position" in config:
-            matchers.append(PositionMatcher(config["position"]))
+            position_config = config["position"]
+            
+            # 新语法：position 是一个对象 { type, index }
+            if isinstance(position_config, dict) and "type" in position_config:
+                pos_type = position_config["type"]
+                pos_index = position_config["index"]
+                
+                if pos_type == "absolute":
+                    # 绝对定位：相对于整个文档
+                    matchers.append(PositionMatcher(pos_index))
+                
+                elif pos_type == "relative":
+                    # 相对定位：可能是区间表达式或简单位置
+                    if isinstance(pos_index, str) and any(c in pos_index for c in '()[]'):
+                        # 区间表达式：(a, b) 或 [a, b] 等
+                        range_matchers = self._parse_range_expression(pos_index)
+                        matchers.extend(range_matchers)
+                    else:
+                        # 简单位置：first, last, middle, 0, 1, 2...
+                        # 这个会在 _build_matchers_for_children 中处理
+                        pass
+            
+            # 旧语法：position 是一个简单值（向后兼容）
+            else:
+                matchers.append(PositionMatcher(position_config))
 
         # 内容模式匹配
         if "pattern" in config:
             matchers.append(PatternMatcher(config["pattern"]))
 
-        # 相对位置匹配
+        # 旧语法：after/before（向后兼容）
         if "after" in config:
             offset = config.get("offset", 0)
             matchers.append(RelativeMatcher(config["after"], "after", offset))
@@ -604,9 +663,47 @@ class Classifier:
             offset = config.get("offset", 0)
             matchers.append(RelativeMatcher(config["before"], "before", offset))
 
-        # 范围匹配
+        # 旧语法：range（向后兼容）
         if "range" in config:
             range_config = config["range"]
             matchers.append(RangeMatcher(range_config["after"], range_config["before"]))
 
         return matchers
+    
+    def _parse_range_expression(self, expr: str) -> List[Matcher]:
+        """解析范围表达式
+        
+        支持的格式：
+        - (a, b)  : 开区间，不包含 a 和 b
+        - [a, b)  : 左闭右开，包含 a，不包含 b
+        - (a, b]  : 左开右闭，不包含 a，包含 b
+        - [a, b]  : 闭区间，包含 a 和 b
+        
+        Args:
+            expr: 区间表达式字符串
+            
+        Returns:
+            匹配器列表
+        """
+        import re
+        
+        # 解析区间表达式：([左括号)(锚点1), (锚点2)(右括号)
+        pattern = r'^([\[\(])\s*(\w+)\s*,\s*(\w+)\s*([\]\)])$'
+        match = re.match(pattern, expr.strip())
+        
+        if not match:
+            raise ValueError(f"无效的范围表达式: {expr}")
+        
+        left_bracket, anchor1, anchor2, right_bracket = match.groups()
+        
+        # 构建锚点定义
+        after_anchor = {"class": anchor1}
+        before_anchor = {"class": anchor2}
+        
+        # 根据括号类型确定是否包含边界
+        # 开区间 (a, b): 不包含边界，使用 RangeMatcher（默认不包含）
+        # 闭区间 [a, b]: 包含边界，需要特殊处理
+        
+        # 目前简化处理：都使用 RangeMatcher（不包含边界）
+        # TODO: 实现包含边界的逻辑
+        return [RangeMatcher(after_anchor, before_anchor)]

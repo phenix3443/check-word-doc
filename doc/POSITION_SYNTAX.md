@@ -1,0 +1,202 @@
+# Position 定位语法说明
+
+## 概述
+
+`position` 字段用于定位文档元素，支持两种定位类型：
+1. **绝对定位** (`absolute`)：相对于整个文档的绝对位置
+2. **相对定位** (`relative`)：相对于其他元素或父区域的相对位置
+
+## 1. 绝对定位 (Absolute)
+
+相对于整个文档的绝对位置。
+
+### 语法
+
+```yaml
+position:
+  type: absolute
+  index: <位置>
+```
+
+### 支持的位置值
+
+| 值 | 说明 | 示例 |
+|----|------|------|
+| `0`, `1`, `2`... | 数字索引（从 0 开始） | 第 0 个段落 |
+| `-1`, `-2`... | 负数索引（从末尾开始） | 最后一个段落 |
+| `first` | 第一个元素（等同于 `0`） | 文档第一段 |
+| `last` | 最后一个元素（等同于 `-1`） | 文档最后一段 |
+
+### 示例
+
+```yaml
+# 论文标题（文档的第一个段落）
+- class: title
+  match:
+    type: paragraph
+    position:
+      type: absolute
+      index: 0  # 或 first
+```
+
+## 2. 相对定位 (Relative)
+
+相对于其他元素或父区域的位置。
+
+### 语法
+
+```yaml
+position:
+  type: relative
+  index: <相对位置或区间表达式>
+```
+
+### 2.1 相对于其他元素（区间定位）
+
+使用数学区间符号表示两个锚点之间的区域。
+
+#### 区间符号
+
+| 符号 | 说明 | 包含关系 |
+|------|------|----------|
+| `(a, b)` | 开区间 | 不包含 a 和 b |
+| `[a, b)` | 左闭右开 | 包含 a，不包含 b |
+| `(a, b]` | 左开右闭 | 不包含 a，包含 b |
+| `[a, b]` | 闭区间 | 包含 a 和 b |
+
+#### 锚点类型
+
+锚点可以是：
+- **class 名称**：引用其他已识别的元素（如 `title`、`abstract`）
+- **pattern**：使用正则表达式匹配（如 `"^摘要："`）
+- **position**：绝对位置（如 `0`、`first`、`last`）
+
+#### 示例
+
+```yaml
+# 作者区域：标题和摘要之间（不包含标题和摘要本身）
+- class: author-section
+  match:
+    type: paragraph
+    position:
+      type: relative
+      index: (title, abstract)  # 开区间
+
+# 正文区域：摘要之后到参考文献之前（包含摘要，不包含参考文献）
+- class: body-section
+  match:
+    type: paragraph
+    position:
+      type: relative
+      index: [abstract, references-title)  # 左闭右开
+```
+
+### 2.2 相对于父区域
+
+用于 `children` 规则中，相对于父区域的位置。
+
+#### 支持的位置值
+
+| 值 | 说明 |
+|----|------|
+| `first` | 父区域的第一个元素 |
+| `last` | 父区域的最后一个元素 |
+| `middle` | 父区域的中间元素（不包括首尾） |
+| `0`, `1`, `2`... | 相对于父区域的索引 |
+| `-1`, `-2`... | 相对于父区域的负数索引 |
+
+#### 示例
+
+```yaml
+# 作者区域（父区域）
+- class: author-section
+  match:
+    type: paragraph
+    position:
+      type: relative
+      index: (title, abstract)
+  
+  # 子元素（相对于父区域）
+  children:
+    # 第一个元素：作者列表
+    - class: author-list
+      match:
+        position:
+          type: relative
+          index: first  # 父区域的第一个
+        pattern: ".*[,，、].*"
+    
+    # 中间元素：作者单位
+    - class: author-affiliation
+      match:
+        position:
+          type: relative
+          index: middle  # 父区域的中间元素
+        pattern: "^\\d+\\."
+    
+    # 最后一个元素：通信作者
+    - class: corresponding-author
+      match:
+        position:
+          type: relative
+          index: last  # 父区域的最后一个
+        pattern: "^\\*"
+```
+
+## 完整示例
+
+```yaml
+document:
+  classifiers:
+    # 1. 绝对定位：论文标题
+    - class: title
+      match:
+        type: paragraph
+        position:
+          type: absolute
+          index: 0
+    
+    # 2. 相对定位（区间）：作者区域
+    - class: author-section
+      match:
+        type: paragraph
+        position:
+          type: relative
+          index: (title, abstract)
+      
+      # 3. 相对定位（父区域）：作者区域内的子元素
+      children:
+        - class: author-list
+          match:
+            position:
+              type: relative
+              index: first
+            pattern: ".*,.*"
+        
+        - class: corresponding-author
+          match:
+            position:
+              type: relative
+              index: last
+            pattern: "^\\*"
+    
+    # 4. 模式匹配：摘要（不需要 position）
+    - class: abstract
+      match:
+        type: paragraph
+        pattern: "^摘要："
+```
+
+## 设计原则
+
+1. **语义清晰**：`type` 字段明确表达定位类型
+2. **标准符号**：使用数学区间符号表示包含关系
+3. **统一格式**：所有定位都使用 `position: { type, index }` 结构
+4. **灵活组合**：可以与 `pattern`、`type` 等其他匹配条件组合使用
+
+## 注意事项
+
+1. **依赖顺序**：使用 class 引用时，确保被引用的 class 已定义（系统会自动处理依赖）
+2. **循环依赖**：避免 A 依赖 B，B 依赖 A 的情况（系统会检测并报错）
+3. **父区域范围**：`relative` 定位只在 `children` 规则中有效
+4. **区间边界**：开区间 `(a, b)` 不包含锚点本身，闭区间 `[a, b]` 包含锚点

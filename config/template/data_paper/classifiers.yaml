@@ -6,33 +6,41 @@ document:
     - class: title
       match:
         type: paragraph
-        position: 0
+        position:
+          type: absolute
+          index: 0 # 绝对定位：文档的第 0 个段落
 
     # 2. 作者区域（复合区域：标题和摘要之间）
     - class: author-section
       match:
         type: paragraph
-        range:
-          after: { class: title }
-          before: { class: abstract }
+        position:
+          type: relative # 相对定位：相对于 title 和 abstract
+          index: (title, abstract) # 开区间：不包含 title 和 abstract 本身
       # 作者区域内的子元素（使用相对定位）
       children:
         # 第一个元素：作者列表（包含逗号或顿号）
         - class: author-list
           match:
-            position: first
+            position:
+              type: relative # 相对定位：相对于父区域
+              index: first # 父区域的第一个
             pattern: ".*[,，、].*"
 
         # 中间元素：作者单位（以数字开头）
         - class: author-affiliation
           match:
-            position: middle
+            position:
+              type: relative # 相对定位：相对于父区域
+              index: middle # 父区域的中间元素
             pattern: "^\\d+\\."
 
         # 最后一个元素：通信作者（以*开头）
         - class: corresponding-author
           match:
-            position: last
+            position:
+              type: relative # 相对定位：相对于父区域
+              index: last # 父区域的最后一个
             pattern: "^\\*"
 
     # 3. 中文摘要（以"摘要："开头的段落，包含完整摘要内容）
