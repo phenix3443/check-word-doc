@@ -1,15 +1,16 @@
 document:
   # 全局默认样式
+  # 注意：根据实际数据论文模板（刘尚亮修正版）设置
   defaults:
     font:
-      size: 小四
+      size: 小四 # 12pt
       name_eastasia: 宋体
       name_ascii: "Times New Roman"
     paragraph:
-      line_spacing: 固定值20磅
+      line_spacing: 1.15倍 # 模板使用 1.15 倍行距（非常见的 1.5 倍）
       alignment: 两端对齐
       first_line_indent: 2字符
-  
+
   # 元素识别规则
   classifiers:
     # 1. 论文标题（第一段）
@@ -17,75 +18,75 @@ document:
       match:
         type: paragraph
         position: 0
-    
+
     # 2. 作者列表（第二段，包含逗号或顿号）
     - class: author-list
       match:
         type: paragraph
         position: 1
         pattern: ".*[,，、].*"
-    
-    # 3. 中文摘要标题（以"摘要："开头）
+
+    # 3. 中文摘要标题（以"摘要："开头，中文冒号）
     - class: abstract-title
       match:
         type: paragraph
-        pattern: "^摘要[:：]"
-    
-    # 4. 关键词（以"关键词："开头）
+        pattern: "^摘要："
+
+    # 4. 关键词（以"关键词："开头，中文冒号）
     - class: keywords
       match:
         type: paragraph
-        pattern: "^关键词[:：]"
-    
+        pattern: "^关键词："
+
     # 5. 英文摘要标题（以"Abstract:"开头）
     - class: abstract-title-en
       match:
         type: paragraph
         pattern: "^Abstract:"
-    
+
     # 6. 英文关键词（以"Keywords:"开头）
     - class: keywords-en
       match:
         type: paragraph
         pattern: "^Keywords:"
-    
+
     # 7. 一级标题（如"1 引言"）
     - class: heading-1
       match:
         type: paragraph
         pattern: "^\\d+\\s+\\S+"
-    
+
     # 8. 二级标题（如"1.1 背景"）
     - class: heading-2
       match:
         type: paragraph
         pattern: "^\\d+\\.\\d+\\s+\\S+"
-    
+
     # 9. 三级标题（如"1.1.1 详细内容"）
     - class: heading-3
       match:
         type: paragraph
         pattern: "^\\d+\\.\\d+\\.\\d+\\s+\\S+"
-    
-    # 10. 参考文献标题
+
+    # 10. 参考文献标题（可能有冒号或没有）
     - class: references-title
       match:
         type: paragraph
-        pattern: "^参考文献[:：]?"
-    
+        pattern: "^参考文献：?"
+
     # 11. 作者单位（在作者列表和摘要之间）
     - class: author-affiliation
       match:
         type: paragraph
         range:
-          after: {class: author-list}
-          before: {class: abstract-title}
-    
+          after: { class: author-list }
+          before: { class: abstract-title }
+
     # 12. 通用段落（所有段落都是段落）
     - class: paragraph
       match:
         type: paragraph
-  
+
   # 样式定义
   styles:
     # 论文标题
@@ -100,7 +101,7 @@ document:
         space_before: 0.5行
         space_after: 0.5行
         first_line_indent: 0字符
-    
+
     # 作者列表
     .author-list:
       font:
@@ -110,7 +111,7 @@ document:
       paragraph:
         alignment: 居中
         first_line_indent: 0字符
-    
+
     # 作者单位
     .author-affiliation:
       font:
@@ -118,7 +119,7 @@ document:
       paragraph:
         alignment: 居中
         first_line_indent: 0字符
-    
+
     # 中文摘要标题
     .abstract-title:
       font:
@@ -128,7 +129,7 @@ document:
       paragraph:
         alignment: 左对齐
         first_line_indent: 0字符
-    
+
     # 关键词
     .keywords:
       font:
@@ -136,7 +137,7 @@ document:
       paragraph:
         alignment: 左对齐
         first_line_indent: 0字符
-    
+
     # 英文摘要标题
     .abstract-title-en:
       font:
@@ -147,7 +148,7 @@ document:
       paragraph:
         alignment: 左对齐
         first_line_indent: 0字符
-    
+
     # 英文关键词
     .keywords-en:
       font:
@@ -155,7 +156,7 @@ document:
       paragraph:
         alignment: 左对齐
         first_line_indent: 0字符
-    
+
     # 一级标题
     .heading-1:
       font:
@@ -167,7 +168,7 @@ document:
         space_before: 0.5行
         space_after: 0.5行
         first_line_indent: 0字符
-    
+
     # 二级标题
     .heading-2:
       font:
@@ -177,7 +178,7 @@ document:
       paragraph:
         alignment: 左对齐
         first_line_indent: 0字符
-    
+
     # 三级标题
     .heading-3:
       font:
@@ -186,7 +187,7 @@ document:
       paragraph:
         alignment: 左对齐
         first_line_indent: 0字符
-    
+
     # 参考文献标题
     .references-title:
       font:

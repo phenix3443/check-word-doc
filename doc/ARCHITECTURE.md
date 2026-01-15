@@ -377,11 +377,11 @@ classifiers:
   # 通用分类
   - class: paragraph
     match: {type: paragraph}
-  
+
   # 特定分类
   - class: title
     match: {position: 0}
-  
+
   # 特殊标记
   - class: important
     match: {position: 0}
@@ -390,6 +390,7 @@ classifiers:
 ```
 
 这使得我们可以：
+
 - 定义通用样式（如 `.paragraph`）
 - 定义特定样式（如 `.title`）
 - 定义特殊样式（如 `.important`）
