@@ -1,9 +1,10 @@
 # 数据论文配置文件（模块化版本）
 #
-# 结构：
-# - config/template/data_paper.yaml (本文件): 主配置 + defaults
-# - config/template/data_paper/classifiers.yaml: 元素识别规则
-# - config/template/data_paper/styles.yaml: 样式定义
+# 目录结构：
+# config/template/data_paper/
+# ├── config.yaml          # 主配置 + defaults（本文件）
+# ├── classifiers.yaml     # 元素识别规则
+# └── styles.yaml          # 样式定义
 #
 # 优势：
 # - 关注点分离：defaults、classifiers、styles 分开管理
@@ -12,8 +13,8 @@
 
 # 导入模块化配置
 import:
-  - data_paper/classifiers.yaml
-  - data_paper/styles.yaml
+  - classifiers.yaml
+  - styles.yaml
 
 document:
   # 全局默认样式
