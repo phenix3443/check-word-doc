@@ -137,6 +137,7 @@ Classifier 会自动分析依赖并按正确顺序处理：
 3. 使用记忆化避免重复处理
 
 示例：
+
 ```yaml
 # author-section 引用了 title 和 abstract
 - class: author-section
