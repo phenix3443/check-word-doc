@@ -14,7 +14,7 @@ document:
         type: paragraph
         range:
           after: { class: title }
-          before: { pattern: "^摘要：" }
+          before: { class: abstract }
       # 作者区域内的子元素（使用相对定位）
       children:
         # 第一个元素：作者列表（包含逗号或顿号）

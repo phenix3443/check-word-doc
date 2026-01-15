@@ -100,13 +100,16 @@ styles:
    └── 顺序访问所有段落和表格
 
 3. 语义标注（Classifier）
+   ├── 分析规则依赖关系
+   ├── 递归处理规则（确保依赖先被处理）
    ├── 根据 classifiers 规则匹配元素
    ├── 给匹配的元素添加 class 属性
    └── 支持多种匹配方式：
        ├── 绝对位置（position）
        ├── 内容模式（pattern）
        ├── 相对位置（after/before）
-       └── 范围定位（range）
+       ├── 范围定位（range）
+       └── class 引用（引用其他已识别的元素）
 
 4. 样式检查（StyleChecker）
    ├── 遍历所有带 class 的元素
@@ -124,9 +127,30 @@ styles:
 
 负责元素识别和 class 标注。
 
+**关键特性：递归依赖解析**
+
+当规则之间存在依赖关系时（例如 `author-section` 依赖 `title` 和 `abstract`），
+Classifier 会自动分析依赖并按正确顺序处理：
+
+1. 提取每条规则的依赖（通过 `_extract_dependencies`）
+2. 递归处理依赖规则（通过 `_process_rule_with_dependencies`）
+3. 使用记忆化避免重复处理
+
+示例：
+```yaml
+# author-section 引用了 title 和 abstract
+- class: author-section
+  match:
+    range:
+      after: { class: title }      # 依赖 title
+      before: { class: abstract }  # 依赖 abstract
+```
+
+处理顺序：`title` → `abstract` → `author-section`
+
 ```python
 class Classifier:
-    """元素分类器"""
+    """元素分类器（支持递归依赖解析）"""
 
     def classify(self, blocks: List[Block]) -> List[Block]:
         """给文档元素添加 class 属性"""

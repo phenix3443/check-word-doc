@@ -318,9 +318,18 @@ class Classifier:
             rules: classifiers 配置列表
         """
         self.rules = rules
+        # 构建规则索引：class_name -> rule
+        self.rule_index = {rule['class']: rule for rule in rules}
+        # 记录已处理的规则（避免重复处理）
+        self.processed = set()
 
     def classify(self, blocks: List[Block]) -> List[Block]:
         """给所有元素添加 class 属性
+        
+        使用递归依赖解析：
+        1. 分析每条规则的依赖（引用的 class）
+        2. 递归确保依赖的规则先被处理
+        3. 使用记忆化避免重复处理
         
         Args:
             blocks: 文档元素列表
@@ -328,9 +337,75 @@ class Classifier:
         Returns:
             添加了 class 的元素列表（原地修改）
         """
+        # 清空处理记录
+        self.processed.clear()
+        
+        # 递归处理每条规则
         for rule in self.rules:
-            self._apply_rule(rule, blocks)
+            self._process_rule_with_dependencies(rule, blocks)
+        
         return blocks
+    
+    def _process_rule_with_dependencies(self, rule: Dict[str, Any], blocks: List[Block]) -> None:
+        """递归处理规则及其依赖
+        
+        Args:
+            rule: 规则配置
+            blocks: 文档元素列表
+        """
+        class_name = rule['class']
+        
+        # 如果已处理，跳过
+        if class_name in self.processed:
+            return
+        
+        # 提取依赖的 class
+        dependencies = self._extract_dependencies(rule)
+        
+        # 递归处理依赖
+        for dep_class in dependencies:
+            if dep_class in self.rule_index and dep_class not in self.processed:
+                dep_rule = self.rule_index[dep_class]
+                self._process_rule_with_dependencies(dep_rule, blocks)
+        
+        # 处理当前规则
+        self._apply_rule(rule, blocks)
+        
+        # 标记为已处理
+        self.processed.add(class_name)
+    
+    def _extract_dependencies(self, rule: Dict[str, Any]) -> List[str]:
+        """提取规则依赖的 class
+        
+        Args:
+            rule: 规则配置
+            
+        Returns:
+            依赖的 class 名称列表
+        """
+        dependencies = []
+        match_config = rule.get('match', {})
+        
+        # 检查 after/before 中的 class 引用
+        if 'after' in match_config and isinstance(match_config['after'], dict):
+            if 'class' in match_config['after']:
+                dependencies.append(match_config['after']['class'])
+        
+        if 'before' in match_config and isinstance(match_config['before'], dict):
+            if 'class' in match_config['before']:
+                dependencies.append(match_config['before']['class'])
+        
+        # 检查 range 中的 class 引用
+        if 'range' in match_config:
+            range_config = match_config['range']
+            if 'after' in range_config and isinstance(range_config['after'], dict):
+                if 'class' in range_config['after']:
+                    dependencies.append(range_config['after']['class'])
+            if 'before' in range_config and isinstance(range_config['before'], dict):
+                if 'class' in range_config['before']:
+                    dependencies.append(range_config['before']['class'])
+        
+        return dependencies
 
     def _apply_rule(self, rule: Dict[str, Any], blocks: List[Block]) -> None:
         """应用单条规则"""
