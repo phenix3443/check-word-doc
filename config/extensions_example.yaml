@@ -1,0 +1,52 @@
+# 扩展配置示例
+# 演示如何通过配置文件扩展系统功能，而无需修改代码
+
+document:
+  # ========== 自定义字号别名 ==========
+  # 可以添加自定义的字号名称，系统会自动识别
+  # 格式：别名: 磅数
+  font_size_aliases:
+    "特大号": 48 # 自定义：特大号 = 48pt
+    "超大号": 36 # 自定义：超大号 = 36pt
+    "正文": 10.5 # 自定义：正文 = 10.5pt（五号）
+    "标题": 16 # 自定义：标题 = 16pt（三号）
+
+  # ========== 自定义对齐方式别名 ==========
+  # 可以添加其他语言的对齐方式名称
+  # 格式：别名: 枚举值（CENTER/LEFT/RIGHT/JUSTIFY/DISTRIBUTE）
+  alignment_aliases:
+    "中央揃え": "CENTER" # 日语：居中
+    "左揃え": "LEFT" # 日语：左对齐
+    "右揃え": "RIGHT" # 日语：右对齐
+    "両端揃え": "JUSTIFY" # 日语：两端对齐
+    "centré": "CENTER" # 法语：居中
+    "gauche": "LEFT" # 法语：左对齐
+    "droite": "RIGHT" # 法语：右对齐
+
+  # ========== 字符宽度比例 ==========
+  # 调整字符宽度与字号的比例（默认 1.0）
+  # 如果使用的字体字符宽度与字号不是 1:1，可以在此调整
+  char_width_ratio: 1.0
+
+  # ========== 行高比例 ==========
+  # 调整行高与字号的比例（默认 1.2）
+  # Word 的单倍行距约为字号的 1.2 倍
+  line_height_ratio: 1.2
+
+  # ========== 使用示例 ==========
+  # 在样式定义中可以使用自定义的字号和对齐方式
+
+  classifiers:
+    - class: custom-title
+      match:
+        type: paragraph
+        position:
+          type: absolute
+          index: 0
+
+  styles:
+    .custom-title:
+      font:
+        size: 特大号 # 使用自定义字号别名
+      paragraph:
+        alignment: 中央揃え # 使用自定义对齐方式别名（日语）

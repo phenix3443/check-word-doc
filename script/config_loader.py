@@ -147,12 +147,16 @@ class ConfigLoader:
         """
         result = base.copy()
         for key, value in override.items():
-            if key == "rules" and isinstance(result.get(key), list) and isinstance(value, list):
+            # 对于列表类型的配置项，进行合并（追加）而不是覆盖
+            # 适用于：rules, classifiers, styles（如果是列表）
+            if key in ["rules", "classifiers"] and isinstance(result.get(key), list) and isinstance(value, list):
                 result[key] = list(result.get(key) or []) + list(value or [])
                 continue
+            # 对于字典类型，递归合并
             if key in result and isinstance(result[key], dict) and isinstance(value, dict):
                 result[key] = self._deep_merge(result[key], value)
             else:
+                # 其他情况直接覆盖
                 result[key] = value
         return result
 
@@ -179,7 +183,46 @@ class ConfigLoader:
 
         self.config = self._load_yaml_with_imports(config_file)
         self._validate_config()
+        self._apply_extensions()
         return self.config
+    
+    def _apply_extensions(self):
+        """应用配置中的扩展设置（自定义字号、对齐方式等）"""
+        document_config = self.config.get('document', {})
+        
+        # 应用自定义字号别名
+        if 'font_size_aliases' in document_config:
+            from script.utils.unit_converter import UnitConverter
+            for alias, pt in document_config['font_size_aliases'].items():
+                UnitConverter.register_font_size_alias(alias, pt)
+        
+        # 应用自定义对齐方式别名
+        if 'alignment_aliases' in document_config:
+            from script.core.style_checker import StyleChecker
+            from docx.enum.text import WD_ALIGN_PARAGRAPH
+            
+            # 对齐方式枚举映射
+            alignment_enums = {
+                'CENTER': WD_ALIGN_PARAGRAPH.CENTER,
+                'LEFT': WD_ALIGN_PARAGRAPH.LEFT,
+                'RIGHT': WD_ALIGN_PARAGRAPH.RIGHT,
+                'JUSTIFY': WD_ALIGN_PARAGRAPH.JUSTIFY,
+                'DISTRIBUTE': WD_ALIGN_PARAGRAPH.DISTRIBUTE,
+            }
+            
+            for alias, enum_name in document_config['alignment_aliases'].items():
+                if enum_name in alignment_enums:
+                    StyleChecker.register_alignment_alias(alias, alignment_enums[enum_name])
+        
+        # 应用字符宽度比例
+        if 'char_width_ratio' in document_config:
+            from script.utils.unit_converter import UnitConverter
+            UnitConverter.set_char_width_ratio(document_config['char_width_ratio'])
+        
+        # 应用行高比例
+        if 'line_height_ratio' in document_config:
+            from script.utils.unit_converter import UnitConverter
+            UnitConverter.set_line_height_ratio(document_config['line_height_ratio'])
 
     def _validate_config(self):
         """

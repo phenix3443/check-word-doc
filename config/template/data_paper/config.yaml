@@ -3,17 +3,27 @@
 # 目录结构：
 # config/template/data_paper/
 # ├── config.yaml          # 主配置（本文件）
-# ├── classifiers.yaml     # 元素识别规则
-# ├── styles.yaml          # 样式定义（包含 defaults）
-# └── rules.yaml           # 内容规则检查
+# ├── classifiers.yaml     # 数据论文特定的元素识别规则
+# ├── styles.yaml          # 数据论文特定的样式定义（包含 defaults）
+# └── rules.yaml           # 数据论文特定的内容规则检查
+#
+# config/common/
+# ├── classifiers.yaml     # 通用元素识别规则（二三级标题、图表题注等）
+# └── styles.yaml          # 通用样式定义
 #
 # 优势：
 # - 关注点分离：识别、样式、规则分开管理
 # - 易于维护：每个文件职责单一
-# - 可复用：可以在不同配置中引用相同的规则
+# - 可复用：通用配置可以在不同文档类型中复用
 
-# 导入模块化配置
+# 导入配置文件
+# 注意：导入顺序很重要，后导入的配置会覆盖先导入的配置
 import:
-  - classifiers.yaml # 元素识别规则
-  - styles.yaml      # 样式定义（包含 defaults 和 styles）
-  - rules.yaml       # 内容规则检查
+  # 1. 通用配置（适用于大多数中文学术文档）
+  - ../../common/classifiers.yaml # 通用元素识别（二三级标题、图表题注）
+  - ../../common/styles.yaml # 通用样式定义
+
+  # 2. 数据论文特定配置（会覆盖通用配置中的同名项）
+  - classifiers.yaml # 数据论文特定的元素识别规则
+  - styles.yaml # 数据论文特定的样式定义（包含 defaults）
+  - rules.yaml # 数据论文特定的内容规则检查

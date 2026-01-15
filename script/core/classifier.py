@@ -231,18 +231,21 @@ class RelativePositionInRangeMatcher(Matcher):
     在指定的 parent_range 范围内，匹配相对位置的元素。
 
     Examples:
-        position: first   # 范围内的第一个
-        position: last    # 范围内的最后一个
-        position: middle  # 范围内的中间元素（不包括首尾）
-        position: 0       # 范围内的第 0 个
+        position: 0       # 范围内的第一个（0-based）
+        position: -1      # 范围内的最后一个
+        position: 1       # 范围内的第二个
+        position: -2      # 范围内的倒数第二个
     """
 
-    def __init__(self, position, parent_range: List[Block]):
+    def __init__(self, position: int, parent_range: List[Block]):
         """
         Args:
-            position: 相对位置（'first', 'last', 'middle', 或数字索引）
+            position: 数字索引（0表示第一个，-1表示最后一个）
             parent_range: 父区域的块列表
         """
+        if not isinstance(position, int):
+            raise ValueError(f"position 必须是整数，不支持字符串形式。使用 0 表示第一个，-1 表示最后一个。当前值: {position}")
+        
         self.position = position
         self.parent_range = parent_range
 
@@ -251,29 +254,15 @@ class RelativePositionInRangeMatcher(Matcher):
         if block not in self.parent_range:
             return False
 
-        # 根据位置类型匹配
-        if isinstance(self.position, str):
-            if self.position == "first":
-                return block == self.parent_range[0]
-            elif self.position == "last":
-                return block == self.parent_range[-1]
-            elif self.position == "middle":
-                # 中间元素（不包括首尾）
-                if len(self.parent_range) <= 2:
-                    return False
-                return block in self.parent_range[1:-1]
-            else:
-                return False
-
         # 数字索引（相对于 parent_range）
-        elif isinstance(self.position, int):
-            if self.position < 0:
-                target_idx = len(self.parent_range) + self.position
-            else:
-                target_idx = self.position
+        # 支持负数索引：-1 表示最后一个，-2 表示倒数第二个
+        if self.position < 0:
+            target_idx = len(self.parent_range) + self.position
+        else:
+            target_idx = self.position
 
-            if 0 <= target_idx < len(self.parent_range):
-                return block == self.parent_range[target_idx]
+        if 0 <= target_idx < len(self.parent_range):
+            return block == self.parent_range[target_idx]
 
         return False
 

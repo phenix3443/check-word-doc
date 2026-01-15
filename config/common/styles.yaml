@@ -1,0 +1,85 @@
+# 通用样式定义
+# 这些样式适用于大多数中文学术文档
+
+document:
+  styles:
+    # 一级标题（如"1  数据采集和处理方法"）
+    # Word样式：Heading 2
+    # 格式要求：宋体，西文字体Times New Roman，4号，段前、段后各0.5行距
+    .heading-1:
+      font:
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
+        size: 四号
+      paragraph:
+        alignment: 左对齐
+        space_before: 0.5行
+        space_after: 0.5行
+
+    # 二级标题（如"1.1  数据来源与组成"）
+    # Word样式：Heading 3
+    # 格式要求：宋体，西文字体Times New Roman，小4号，段前、段后各0.5行距
+    .heading-2:
+      font:
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
+        size: 小四
+      paragraph:
+        alignment: 左对齐
+        space_before: 0.5行
+        space_after: 0.5行
+
+    # 三级标题（如"1.1.1  详细内容"）
+    # Word样式：Heading 4
+    # 格式要求：宋体，西文字体Times New Roman，5号，段前、段后各0.5行距
+    .heading-3:
+      font:
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
+        size: 五号
+      paragraph:
+        alignment: 左对齐
+        space_before: 0.5行
+        space_after: 0.5行
+
+    # 图片段落（通用样式）
+    # 要求：居中对齐，无首行缩进
+    # 注意：这是一个通用样式规则，适用于所有包含图片的段落
+    .figure:
+      paragraph:
+        alignment: 居中
+        first_line_indent: 0字符
+
+    # 图片题注（通用样式）
+    # 格式：图 1 xxxx（图片序号与图片说明中间空1个字）
+    # 要求：宋体（英文Times New Roman），小五，居中，粗体，1.15倍行距
+    # 段前、段后各0.5行距
+    .figure-caption:
+      font:
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
+        size: 小五
+        bold: true
+      paragraph:
+        alignment: 居中
+        line_spacing: 1.15倍
+        space_before: 0.5行
+        space_after: 0.5行
+        first_line_indent: 0字符
+
+    # 表格题注（通用样式）
+    # 格式：表 1： xxxx（表格序号与表格说明中间空1个字，使用中文冒号）
+    # 要求：宋体（英文Times New Roman），小5，居中，标题和题头粗体，1.15倍行距
+    # 段前、段后各0.5行距
+    .table-caption:
+      font:
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
+        size: 小五
+        bold: true
+      paragraph:
+        alignment: 居中
+        line_spacing: 1.15倍
+        space_before: 0.5行
+        space_after: 0.5行
+        first_line_indent: 0字符

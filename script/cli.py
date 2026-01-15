@@ -8,7 +8,6 @@ from script.config_loader import ConfigLoader
 from script.core.engine import DocxLint
 from script.reporters.json_reporter import render_json
 from script.reporters.markdown_reporter import render_markdown
-from script.rules.registry import build_rules
 
 
 def parse_args() -> argparse.Namespace:
@@ -35,8 +34,7 @@ def main() -> int:
     loader = ConfigLoader(args.config)
     config = loader.load()
 
-    rules = build_rules(config)
-    issues = DocxLint(rules=rules, config=config).run(str(docx_path))
+    issues = DocxLint(config=config).run(str(docx_path))
 
     if args.format == "json":
         out_text = render_json(issues)

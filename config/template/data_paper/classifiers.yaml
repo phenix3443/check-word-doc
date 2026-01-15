@@ -24,36 +24,38 @@ document:
           match:
             position:
               type: relative # 相对定位：相对于父区域
-              index: first # 父区域的第一个
-            pattern: ".*[,，、].*"
+              index: 0 # 父区域的第一个（0-based）
+            pattern: "^.*[,，、].*$"
 
         # 中间元素：作者单位
         # 位于 author-list 和 corresponding-author 之间
+        # 格式：编号. 单位/机构，城市  邮编（多作者）或 单位/机构，城市  邮编（单作者）
         - class: author-affiliation
           match:
             position:
               type: relative # 相对定位：相对于父区域
               index: (author-list, corresponding-author) # 开区间：不包含首尾
+            pattern: "^(\\d+\\.\\s+)?.+，.+\\s{2,}.+$" # 可选编号 + 单位 + 逗号 + 城市 + 多个空格 + 邮编
 
         # 最后一个元素：通信作者（以*开头）
         - class: corresponding-author
           match:
             position:
               type: relative # 相对定位：相对于父区域
-              index: last # 父区域的最后一个
-            pattern: "^\\*"
+              index: -1 # 父区域的最后一个（-1表示倒数第一个）
+            pattern: "^\\*.*$"
 
     # 3. 中文摘要（以"摘要："开头的段落，包含完整摘要内容）
     - class: abstract
       match:
         type: paragraph
-        pattern: "^摘要："
+        pattern: "^摘要：.*$"
 
     # 4. 关键词（以"关键词："开头的段落，包含完整关键词列表）
     - class: keywords
       match:
         type: paragraph
-        pattern: "^关键词："
+        pattern: "^关键词：.*$"
 
     # 5. 英文标题（紧跟在关键词之后的第一个段落）
     - class: title-en
@@ -61,7 +63,6 @@ document:
         type: paragraph
         after:
           class: keywords
-          offset: 0 # 紧跟在 keywords 之后
 
     # 6. 英文作者信息（复合结构，位于英文标题和英文摘要之间）
     - class: author-section-en
@@ -76,81 +77,132 @@ document:
           match:
             position:
               type: relative
-              index: first
+              index: 0 # 父区域的第一个（0-based）
 
         # 中间元素：英文作者单位
+        # 格式：编号. 单位名称（多作者）或 单位名称（单作者）
         - class: author-affiliation-en
           match:
             position:
               type: relative
               index: (author-list-en, corresponding-author-en)
+            pattern: "^(\\d+\\.\\s*)?[A-Z].*$" # 可选编号（编号后可无空格）+ 以大写字母开头的单位名称
 
         # 最后一个元素：通讯作者邮箱（以*开头）
         - class: corresponding-author-en
           match:
             position:
               type: relative
-              index: last
+              index: -1 # 父区域的最后一个（-1表示倒数第一个）
 
     # 7. 英文摘要（以"Abstract:"开头的段落，包含完整摘要内容）
     - class: abstract-en
       match:
         type: paragraph
-        pattern: "^Abstract:"
+        pattern: "^Abstract:.*$"
 
     # 8. 英文关键词（以"Keywords:"开头的段落，包含完整关键词列表）
     - class: keywords-en
       match:
         type: paragraph
-        pattern: "^Keywords:"
+        pattern: "^Keywords:.*$"
 
     # 7. 引言标题（特殊的一级标题，内容为"引  言"或"概  述"）
-    # 注意：可能前面有空格，中间也有空格
+    # 位置：紧跟在英文关键词之后
+    # 格式："引  言"或"概  述"（中间有空格，前面没有空格，完全匹配）
     - class: heading-introduction
       match:
         type: paragraph
-        pattern: "^\\s*(引\\s+言|概\\s+述)"
+        pattern: "^(引\\s+言|概\\s+述)$"
+        after:
+          class: keywords-en
 
-    # 8. 致谢标题（特殊的一级标题，内容为"致  谢"）
-    # 注意：可能前面有空格，中间也有空格
+    # 8. 数据采集和处理方法（一级标题，编号为1）
+    # 位置：紧跟在引言之后
+    # 格式："1  数据采集和处理方法"（完全匹配）
+    - class: heading-data-collection
+      match:
+        type: paragraph
+        pattern: "^1\\s+数据采集和处理方法$"
+        after:
+          class: heading-introduction
+
+    # 9. 数据样本描述（一级标题，编号为2）
+    # 位置：紧跟在数据采集和处理方法之后
+    # 格式："2  数据样本描述"（完全匹配）
+    - class: heading-data-description
+      match:
+        type: paragraph
+        pattern: "^2\\s+数据样本描述$"
+        after:
+          class: heading-data-collection
+
+    # 10. 数据质量控制和评估（一级标题，编号为3）
+    # 位置：紧跟在数据样本描述之后
+    # 格式："3  数据质量控制和评估"（完全匹配）
+    - class: heading-quality-control
+      match:
+        type: paragraph
+        pattern: "^3\\s+数据质量控制和评估$"
+        after:
+          class: heading-data-description
+
+    # 11. 数据价值和保藏计划（一级标题，编号为4）
+    # 位置：紧跟在数据质量控制和评估之后
+    # 格式："4  数据价值和保藏计划"（完全匹配）
+    - class: heading-data-value
+      match:
+        type: paragraph
+        pattern: "^4\\s+数据价值和保藏计划$"
+        after:
+          class: heading-quality-control
+
+    # 12. 数据使用方法和建议（一级标题，编号为5）
+    # 位置：紧跟在数据价值和保藏计划之后
+    # 格式："5  数据使用方法和建议"（完全匹配）
+    - class: heading-usage-method
+      match:
+        type: paragraph
+        pattern: "^5\\s+数据使用方法和建议$"
+        after:
+          class: heading-data-value
+
+    # 13. 数据可用性声明（一级标题，编号为6）
+    # 位置：紧跟在数据使用方法和建议之后
+    # 格式："6  数据可用性声明"（完全匹配）
+    - class: heading-availability
+      match:
+        type: paragraph
+        pattern: "^6\\s+数据可用性声明$"
+        after:
+          class: heading-usage-method
+
+    # 14. 致谢标题（特殊的一级标题，内容为"致  谢"）
+    # 位置：紧跟在数据可用性声明之后
+    # 格式："致  谢"（中间有空格，前面没有空格，完全匹配）
     - class: heading-acknowledgments
       match:
         type: paragraph
-        pattern: "^\\s*致\\s+谢"
+        pattern: "^致\\s+谢$"
+        after:
+          class: heading-availability
 
-    # 9. 数据作者分工职责标题（特殊的二级标题，无编号）
-    # 内容：固定为"数据作者分工职责"
-    # 注意：虽然Word样式是Heading 1，但在文档结构中作为二级标题
-    # 使用独立的 class 名称，避免与编号的二级标题冲突
+    # 15. 数据作者分工职责标题（特殊的一级标题，无编号）
+    # 位置：紧跟在致谢之后
+    # 格式："数据作者分工职责"（前面没有空格，完全匹配）
     - class: heading-author-contributions
       match:
         type: paragraph
-        pattern: "^\\s*数据作者分工职责"
+        pattern: "^数据作者分工职责$"
+        after:
+          class: heading-acknowledgments
 
-    # 10. 一级标题（如"1  数据采集和处理方法"）
-    # 格式：数字 + 空格 + 标题内容
-    # 注意：可能有多个空格
-    - class: heading-1
+    # 16. 参考文献标题（特殊的一级标题，固定内容为"参考文献"）
+    # 位置：紧跟在数据作者分工职责之后，文档末尾（最后一个一级标题）
+    # 格式："参考文献"或"参考文献："（前面没有空格）
+    - class: heading-references
       match:
         type: paragraph
-        pattern: "^\\d+\\s+\\S+"
-
-    # 11. 二级标题（如"1.1  数据来源与组成"）
-    # 格式：数字.数字 + 空格 + 标题内容
-    - class: heading-2
-      match:
-        type: paragraph
-        pattern: "^\\d+\\.\\d+\\s+\\S+"
-
-    # 12. 三级标题（如"1.1.1  详细内容"）
-    # 格式：数字.数字.数字 + 空格 + 标题内容
-    - class: heading-3
-      match:
-        type: paragraph
-        pattern: "^\\d+\\.\\d+\\.\\d+\\s+\\S+"
-
-    # 13. 参考文献标题（可能有冒号或没有）
-    - class: references-title
-      match:
-        type: paragraph
-        pattern: "^参考文献：?"
+        pattern: "^参考文献：?$"
+        after:
+          class: heading-author-contributions

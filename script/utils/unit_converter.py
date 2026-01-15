@@ -6,6 +6,15 @@
 - EMU (English Metric Unit): 用于尺寸，914400 EMU = 1 英寸
 - Twip (Twentieth of a point): 用于间距，20 twip = 1 point
 - Pt (Point): 字体大小，2 pt = 1 半磅
+
+中文字号映射：
+- 基于中国国家标准 GB/T 9704-2012
+- 支持"三号"、"小四"等中文字号名称
+- 如需支持其他字号体系，可以通过继承此类并覆盖相关方法实现
+
+对齐方式：
+- 支持中英文双语（"居中"/"CENTER"等）
+- 映射到 python-docx 的标准对齐方式枚举
 """
 
 import re
@@ -13,21 +22,74 @@ from typing import Union, Optional
 
 
 class UnitConverter:
-    """单元转换器"""
+    """单元转换器
     
-    # 常量定义
-    EMU_PER_INCH = 914400  # 1英寸 = 914400 EMU
+    提供人类可读单位到 python-docx 内部单位的转换。
+    所有转换常量都基于国际标准或 Microsoft Word 的标准实现。
+    
+    支持自定义扩展：
+    - 可以通过 register_font_size_alias() 添加自定义字号别名
+    - 可以通过 set_char_width_ratio() 调整字符宽度比例
+    - 可以通过 set_line_height_ratio() 调整行高比例
+    """
+    
+    # ========== 标准单位转换常量 ==========
+    # 这些是固定的国际标准，不应修改
+    
+    EMU_PER_INCH = 914400  # 1英寸 = 914400 EMU（Office Open XML 标准）
     EMU_PER_CM = 360000    # 1厘米 = 360000 EMU
-    TWIP_PER_PT = 20       # 1点 = 20 twip
-    PT_PER_INCH = 72       # 1英寸 = 72点
+    TWIP_PER_PT = 20       # 1点 = 20 twip（传统排版单位）
+    PT_PER_INCH = 72       # 1英寸 = 72点（PostScript 标准）
+    
+    # ========== 估算常量 ==========
+    # 这些是基于常见字体的估算值，可能因字体而异
     
     # 中文字符宽度（磅）- 基于常见字体
-    # 宋体、黑体等中文字体，五号字（10.5pt）时一个字符约等于 10.5pt 宽
+    # 说明：宋体、黑体等中文字体，五号字（10.5pt）时一个字符约等于 10.5pt 宽
+    # 实际宽度可能因字体而异，此处使用 1:1 的比例作为估算
     CHAR_WIDTH_RATIO = 1.0  # 字符宽度与字号的比例
     
     # 行高（基于 Word 默认）
-    # Word 中"行"通常指行距，单倍行距约为字号的 1.2 倍
+    # 说明：Word 中"行"通常指行距，单倍行距约为字号的 1.2 倍
+    # 这是 Word 的默认行高计算方式
     LINE_HEIGHT_RATIO = 1.2
+    
+    # ========== 自定义扩展 ==========
+    # 用于存储用户自定义的字号别名
+    _custom_font_sizes = {}
+    
+    @classmethod
+    def register_font_size_alias(cls, alias: str, pt: float):
+        """注册自定义字号别名
+        
+        Args:
+            alias: 字号别名，如 "特大号"
+            pt: 对应的磅数，如 48
+            
+        Examples:
+            >>> UnitConverter.register_font_size_alias("特大号", 48)
+            >>> UnitConverter.parse_font_size("特大号")
+            96  # 48pt * 2
+        """
+        cls._custom_font_sizes[alias] = pt
+    
+    @classmethod
+    def set_char_width_ratio(cls, ratio: float):
+        """设置字符宽度比例
+        
+        Args:
+            ratio: 字符宽度与字号的比例，默认 1.0
+        """
+        cls.CHAR_WIDTH_RATIO = ratio
+    
+    @classmethod
+    def set_line_height_ratio(cls, ratio: float):
+        """设置行高比例
+        
+        Args:
+            ratio: 行高与字号的比例，默认 1.2
+        """
+        cls.LINE_HEIGHT_RATIO = ratio
     
     @classmethod
     def parse_font_size(cls, value: Union[str, int, float]) -> Optional[int]:
@@ -37,6 +99,7 @@ class UnitConverter:
             value: 字体大小，支持：
                 - 数字: 直接的磅数，如 16 或 "16"
                 - 带单位: "16pt", "5号" 等
+                - 自定义别名: 通过 register_font_size_alias() 注册的别名
                 
         Returns:
             半磅数，如 16pt -> 32
@@ -58,7 +121,15 @@ class UnitConverter:
             
         value_str = str(value).strip()
         
-        # 处理中文字号
+        # 先查找自定义字号别名
+        if value_str in cls._custom_font_sizes:
+            return int(cls._custom_font_sizes[value_str] * 2)
+        
+        # 处理中文字号（基于 GB/T 9704-2012 国家标准）
+        # 这是中国广泛使用的字号标准，对应关系如下：
+        # 初号(42pt) > 小初(36pt) > 一号(26pt) > 小一(24pt) > 二号(22pt) > 小二(18pt)
+        # > 三号(16pt) > 小三(15pt) > 四号(14pt) > 小四(12pt) > 五号(10.5pt) > 小五(9pt)
+        # > 六号(7.5pt) > 小六(6.5pt) > 七号(5.5pt) > 八号(5pt)
         chinese_sizes = {
             "初号": 42, "小初": 36,
             "一号": 26, "小一": 24,

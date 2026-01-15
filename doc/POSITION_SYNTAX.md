@@ -24,8 +24,8 @@ position:
 |----|------|------|
 | `0`, `1`, `2`... | 数字索引（从 0 开始） | 第 0 个段落 |
 | `-1`, `-2`... | 负数索引（从末尾开始） | 最后一个段落 |
-| `first` | 第一个元素（等同于 `0`） | 文档第一段 |
-| `last` | 最后一个元素（等同于 `-1`） | 文档最后一段 |
+
+**注意**：只支持数字形式，不支持字符串形式（如 `"first"`, `"last"`）。使用 `0` 表示第一个，`-1` 表示最后一个。
 
 ### 示例
 
@@ -36,7 +36,7 @@ position:
     type: paragraph
     position:
       type: absolute
-      index: 0  # 或 first
+      index: 0  # 第一个段落
 ```
 
 ## 2. 相对定位 (Relative)
@@ -99,11 +99,10 @@ position:
 
 | 值 | 说明 |
 |----|------|
-| `first` | 父区域的第一个元素 |
-| `last` | 父区域的最后一个元素 |
-| `middle` | 父区域的中间元素（不包括首尾） |
-| `0`, `1`, `2`... | 相对于父区域的索引 |
-| `-1`, `-2`... | 相对于父区域的负数索引 |
+| `0`, `1`, `2`... | 相对于父区域的索引（0表示第一个） |
+| `-1`, `-2`... | 相对于父区域的负数索引（-1表示最后一个） |
+
+**注意**：只支持数字形式，不支持字符串形式（如 `"first"`, `"last"`, `"middle"`）。使用 `0` 表示第一个，`-1` 表示最后一个。
 
 #### 示例
 
@@ -123,23 +122,22 @@ position:
       match:
         position:
           type: relative
-          index: first  # 父区域的第一个
+          index: 0  # 父区域的第一个（0-based）
         pattern: ".*[,，、].*"
     
-    # 中间元素：作者单位
+    # 中间元素：作者单位（使用区间表达式）
     - class: author-affiliation
       match:
         position:
           type: relative
-          index: middle  # 父区域的中间元素
-        pattern: "^\\d+\\."
+          index: (author-list, corresponding-author)  # 开区间
     
     # 最后一个元素：通信作者
     - class: corresponding-author
       match:
         position:
           type: relative
-          index: last  # 父区域的最后一个
+          index: -1  # 父区域的最后一个
         pattern: "^\\*"
 ```
 

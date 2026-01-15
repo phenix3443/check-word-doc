@@ -24,6 +24,9 @@ class StyleChecker:
     3. 检查元素的实际格式
     4. 生成 Issue 报告
     
+    支持自定义扩展：
+    - 可以通过 register_alignment_alias() 添加自定义对齐方式别名
+    
     Examples:
         >>> styles = {
         ...     '.title': {
@@ -34,6 +37,23 @@ class StyleChecker:
         >>> checker = StyleChecker(styles)
         >>> issues = checker.check(blocks)
     """
+    
+    # 对齐方式映射（中英文）
+    # 将配置文件中的对齐方式名称映射到 python-docx 的枚举值
+    # 支持中英文双语以提高配置文件的易用性
+    # 可以通过 register_alignment_alias() 方法扩展
+    ALIGNMENT_MAP = {
+        '居中': WD_ALIGN_PARAGRAPH.CENTER,
+        'CENTER': WD_ALIGN_PARAGRAPH.CENTER,
+        '左对齐': WD_ALIGN_PARAGRAPH.LEFT,
+        'LEFT': WD_ALIGN_PARAGRAPH.LEFT,
+        '右对齐': WD_ALIGN_PARAGRAPH.RIGHT,
+        'RIGHT': WD_ALIGN_PARAGRAPH.RIGHT,
+        '两端对齐': WD_ALIGN_PARAGRAPH.JUSTIFY,
+        'JUSTIFY': WD_ALIGN_PARAGRAPH.JUSTIFY,
+        '分散对齐': WD_ALIGN_PARAGRAPH.DISTRIBUTE,
+        'DISTRIBUTE': WD_ALIGN_PARAGRAPH.DISTRIBUTE,
+    }
 
     def __init__(
         self,
@@ -47,6 +67,19 @@ class StyleChecker:
         """
         self.styles = styles
         self.defaults = defaults or {}
+    
+    @classmethod
+    def register_alignment_alias(cls, alias: str, alignment: WD_ALIGN_PARAGRAPH):
+        """注册自定义对齐方式别名
+        
+        Args:
+            alias: 对齐方式别名，如 "中央揃え"（日语）
+            alignment: python-docx 的对齐方式枚举值
+            
+        Examples:
+            >>> StyleChecker.register_alignment_alias("中央揃え", WD_ALIGN_PARAGRAPH.CENTER)
+        """
+        cls.ALIGNMENT_MAP[alias] = alignment
 
     def check(self, blocks: List[Block]) -> List[Issue]:
         """检查所有元素的样式
@@ -285,24 +318,11 @@ class StyleChecker:
             expected_align = para_def['alignment']
             actual_align = para_format.alignment
             
-            # 转换对齐方式名称
-            align_map = {
-                '居中': WD_ALIGN_PARAGRAPH.CENTER,
-                'CENTER': WD_ALIGN_PARAGRAPH.CENTER,
-                '左对齐': WD_ALIGN_PARAGRAPH.LEFT,
-                'LEFT': WD_ALIGN_PARAGRAPH.LEFT,
-                '右对齐': WD_ALIGN_PARAGRAPH.RIGHT,
-                'RIGHT': WD_ALIGN_PARAGRAPH.RIGHT,
-                '两端对齐': WD_ALIGN_PARAGRAPH.JUSTIFY,
-                'JUSTIFY': WD_ALIGN_PARAGRAPH.JUSTIFY,
-                '分散对齐': WD_ALIGN_PARAGRAPH.DISTRIBUTE,
-                'DISTRIBUTE': WD_ALIGN_PARAGRAPH.DISTRIBUTE,
-            }
-            
-            expected_align_enum = align_map.get(expected_align)
+            # 使用类常量进行对齐方式映射
+            expected_align_enum = self.ALIGNMENT_MAP.get(expected_align)
             
             if expected_align_enum is not None and actual_align != expected_align_enum:
-                actual_align_name = {v: k for k, v in align_map.items()}.get(actual_align, str(actual_align))
+                actual_align_name = {v: k for k, v in self.ALIGNMENT_MAP.items()}.get(actual_align, str(actual_align))
                 issues.append(Issue(
                     code=f'STYLE-PARA-ALIGN-{class_name.upper()}',
                     severity=Severity.ERROR,

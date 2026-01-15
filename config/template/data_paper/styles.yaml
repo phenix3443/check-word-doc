@@ -128,9 +128,9 @@ document:
         line_spacing: 1.15倍
         alignment: 两端对齐
 
-    # 引言标题（特殊的一级标题，但使用 Heading 2 样式）
+    # 引言标题（特殊的一级标题，无编号）
     # 内容："引  言" 或 "概  述"
-    # 格式要求：宋体，4号，段前、段后各0.5行距
+    # 格式要求：与一级标题相同 - 宋体，西文字体Times New Roman，4号，段前、段后各0.5行距
     .heading-introduction:
       font:
         name_eastasia: 宋体
@@ -141,9 +141,81 @@ document:
         space_before: 0.5行
         space_after: 0.5行
 
-    # 致谢标题（特殊的一级标题）
+    # 数据采集和处理方法（一级标题，编号为1）
+    # 格式要求：与一级标题相同 - 宋体，西文字体Times New Roman，4号，段前、段后各0.5行距
+    .heading-data-collection:
+      font:
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
+        size: 四号
+      paragraph:
+        alignment: 左对齐
+        space_before: 0.5行
+        space_after: 0.5行
+
+    # 数据样本描述（一级标题，编号为2）
+    # 格式要求：与一级标题相同
+    .heading-data-description:
+      font:
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
+        size: 四号
+      paragraph:
+        alignment: 左对齐
+        space_before: 0.5行
+        space_after: 0.5行
+
+    # 数据质量控制和评估（一级标题，编号为3）
+    # 格式要求：与一级标题相同
+    .heading-quality-control:
+      font:
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
+        size: 四号
+      paragraph:
+        alignment: 左对齐
+        space_before: 0.5行
+        space_after: 0.5行
+
+    # 数据价值和保藏计划（一级标题，编号为4）
+    # 格式要求：与一级标题相同
+    .heading-data-value:
+      font:
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
+        size: 四号
+      paragraph:
+        alignment: 左对齐
+        space_before: 0.5行
+        space_after: 0.5行
+
+    # 数据使用方法和建议（一级标题，编号为5）
+    # 格式要求：与一级标题相同
+    .heading-usage-method:
+      font:
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
+        size: 四号
+      paragraph:
+        alignment: 左对齐
+        space_before: 0.5行
+        space_after: 0.5行
+
+    # 数据可用性声明（一级标题，编号为6）
+    # 格式要求：与一级标题相同
+    .heading-availability:
+      font:
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
+        size: 四号
+      paragraph:
+        alignment: 左对齐
+        space_before: 0.5行
+        space_after: 0.5行
+
+    # 致谢标题（特殊的一级标题，无编号）
     # 内容："致  谢"
-    # 格式要求：宋体，4号，段前、段后各0.5行距
+    # 格式要求：与一级标题相同 - 宋体，西文字体Times New Roman，4号，段前、段后各0.5行距
     .heading-acknowledgments:
       font:
         name_eastasia: 宋体
@@ -154,61 +226,28 @@ document:
         space_before: 0.5行
         space_after: 0.5行
 
-    # 数据作者分工职责标题（特殊的二级标题，无编号）
+    # 数据作者分工职责标题（特殊的一级标题，无编号）
     # 内容："数据作者分工职责"
-    # 格式要求：与二级标题相同 - 黑体，小四，加粗，左对齐
+    # 格式要求：与一级标题相同 - 宋体，西文字体Times New Roman，4号，段前、段后各0.5行距
     .heading-author-contributions:
       font:
-        name_eastasia: 黑体
-        size: 小四
-        bold: true
-      paragraph:
-        alignment: 左对齐
-
-    # 一级标题（如"1  数据采集和处理方法"）
-    # Word样式：Heading 2
-    .heading-1:
-      font:
-        name_eastasia: 黑体
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
         size: 四号
-        bold: true
       paragraph:
         alignment: 左对齐
         space_before: 0.5行
         space_after: 0.5行
 
-    # 二级标题（如"1.1  数据来源与组成"）
-    # Word样式：Heading 3
-    .heading-2:
+    # 参考文献标题（特殊的一级标题，固定内容）
+    # 内容："参考文献"
+    # 格式要求：与一级标题相同 - 宋体，西文字体Times New Roman，4号，段前、段后各0.5行距
+    .heading-references:
       font:
-        name_eastasia: 黑体
-        size: 小四
-        bold: true
-      paragraph:
-        alignment: 左对齐
-
-    # 三级标题（如"1.1.1  详细内容"）
-    # Word样式：Heading 4
-    .heading-3:
-      font:
-        name_eastasia: 黑体
-        size: 小四
-      paragraph:
-        alignment: 左对齐
-
-    # 参考文献标题
-    .references-title:
-      font:
-        name_eastasia: 黑体
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
         size: 四号
-        bold: true
       paragraph:
         alignment: 左对齐
-
-    # 图片段落（通用样式）
-    # 要求：居中对齐，无首行缩进
-    # 注意：这是一个通用样式规则，适用于所有包含图片的段落
-    .figure:
-      paragraph:
-        alignment: 居中
-        first_line_indent: 0字符
+        space_before: 0.5行
+        space_after: 0.5行
