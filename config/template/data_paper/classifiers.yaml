@@ -27,14 +27,6 @@ document:
               index: first # 父区域的第一个
             pattern: ".*[,，、].*"
 
-        # 最后一个元素：通信作者（以*开头）
-        - class: corresponding-author
-          match:
-            position:
-              type: relative # 相对定位：相对于父区域
-              index: last # 父区域的最后一个
-            pattern: "^\\*"
-
         # 中间元素：作者单位
         # 位于 author-list 和 corresponding-author 之间
         - class: author-affiliation
@@ -42,6 +34,14 @@ document:
             position:
               type: relative # 相对定位：相对于父区域
               index: (author-list, corresponding-author) # 开区间：不包含首尾
+
+        # 最后一个元素：通信作者（以*开头）
+        - class: corresponding-author
+          match:
+            position:
+              type: relative # 相对定位：相对于父区域
+              index: last # 父区域的最后一个
+            pattern: "^\\*"
 
     # 3. 中文摘要（以"摘要："开头的段落，包含完整摘要内容）
     - class: abstract
