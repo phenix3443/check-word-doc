@@ -29,7 +29,11 @@ document:
 
         # 中间元素：作者单位
         # 位于 author-list 和 corresponding-author 之间
-        # 注意：是否以数字开头由 rules.yaml 中的条件规则检查
+        # 可能有多个段落，每个段落对应一个作者的单位信息
+        # 格式要求（由 rules.yaml 验证）：
+        #   - 多作者：编号. 单位/机构，城市  邮编
+        #   - 单作者：单位/机构，城市  邮编（无编号）
+        # 注意：城市和邮编之间有两个空格
         - class: author-affiliation
           match:
             position:
