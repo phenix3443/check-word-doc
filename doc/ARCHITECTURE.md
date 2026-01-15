@@ -127,16 +127,25 @@ styles:
 
 负责元素识别和 class 标注。
 
-**关键特性：递归依赖解析**
+**关键特性：递归依赖解析 + 循环依赖检测**
 
 当规则之间存在依赖关系时（例如 `author-section` 依赖 `title` 和 `abstract`），
 Classifier 会自动分析依赖并按正确顺序处理：
 
-1. 提取每条规则的依赖（通过 `_extract_dependencies`）
-2. 递归处理依赖规则（通过 `_process_rule_with_dependencies`）
-3. 使用记忆化避免重复处理
+1. **循环依赖检测**（初始化时）
+   - 使用 DFS + 三色标记法检测有向图中的环
+   - 如果检测到循环依赖，立即抛出 `ValueError` 并报告循环路径
+   - 例如：`A -> B -> C -> A` 会被检测并报错
 
-示例：
+2. **依赖提取**
+   - 提取每条规则的依赖（通过 `_extract_dependencies`）
+   - 分析 `after`、`before`、`range` 中的 `class` 引用
+
+3. **递归处理**
+   - 递归处理依赖规则（通过 `_process_rule_with_dependencies`）
+   - 使用记忆化避免重复处理
+
+**正确示例（无循环）：**
 
 ```yaml
 # author-section 引用了 title 和 abstract
@@ -147,7 +156,22 @@ Classifier 会自动分析依赖并按正确顺序处理：
       before: { class: abstract }  # 依赖 abstract
 ```
 
-处理顺序：`title` → `abstract` → `author-section`
+处理顺序：`title` → `abstract` → `author-section` ✅
+
+**错误示例（循环依赖）：**
+
+```yaml
+# ❌ 错误：A 依赖 B，B 依赖 A
+- class: section-a
+  match:
+    after: { class: section-b }
+
+- class: section-b
+  match:
+    after: { class: section-a }
+```
+
+错误信息：`检测到循环依赖: section-a -> section-b -> section-a`
 
 ```python
 class Classifier:

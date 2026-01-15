@@ -307,12 +307,18 @@ class Classifier:
         """
         Args:
             rules: classifiers 配置列表
+        
+        Raises:
+            ValueError: 如果检测到循环依赖
         """
         self.rules = rules
         # 构建规则索引：class_name -> rule
         self.rule_index = {rule["class"]: rule for rule in rules}
         # 记录已处理的规则（避免重复处理）
         self.processed = set()
+        
+        # 检查循环依赖
+        self._check_circular_dependencies()
 
     def classify(self, blocks: List[Block]) -> List[Block]:
         """给所有元素添加 class 属性
@@ -397,6 +403,76 @@ class Classifier:
                     dependencies.append(range_config["before"]["class"])
 
         return dependencies
+
+    def _check_circular_dependencies(self) -> None:
+        """检查规则之间是否存在循环依赖
+        
+        使用 DFS + 三色标记法检测有向图中的环：
+        - 白色（未访问）：节点还未被访问
+        - 灰色（访问中）：节点正在被访问（在当前 DFS 路径上）
+        - 黑色（已完成）：节点及其所有后继节点都已访问完成
+        
+        如果在 DFS 过程中遇到灰色节点，说明存在环。
+        
+        Raises:
+            ValueError: 如果检测到循环依赖
+        """
+        # 三种状态
+        WHITE = 0  # 未访问
+        GRAY = 1   # 访问中（在当前路径上）
+        BLACK = 2  # 已完成
+        
+        # 记录每个节点的状态
+        state = {rule["class"]: WHITE for rule in self.rules}
+        
+        def dfs(class_name: str, path: List[str]) -> None:
+            """DFS 访问节点
+            
+            Args:
+                class_name: 当前访问的 class
+                path: 当前 DFS 路径（用于报告循环）
+            
+            Raises:
+                ValueError: 如果检测到循环
+            """
+            # 标记为访问中
+            state[class_name] = GRAY
+            path.append(class_name)
+            
+            # 获取依赖
+            if class_name in self.rule_index:
+                rule = self.rule_index[class_name]
+                dependencies = self._extract_dependencies(rule)
+                
+                for dep_class in dependencies:
+                    # 忽略未定义的依赖（可能是外部引用）
+                    if dep_class not in state:
+                        continue
+                    
+                    if state[dep_class] == GRAY:
+                        # 发现环：dep_class 在当前路径上
+                        cycle_start = path.index(dep_class)
+                        cycle = path[cycle_start:] + [dep_class]
+                        cycle_str = " -> ".join(cycle)
+                        raise ValueError(
+                            f"检测到循环依赖: {cycle_str}\n"
+                            f"规则 '{class_name}' 依赖 '{dep_class}'，但 '{dep_class}' "
+                            f"（直接或间接）也依赖 '{class_name}'"
+                        )
+                    
+                    if state[dep_class] == WHITE:
+                        # 递归访问未访问的依赖
+                        dfs(dep_class, path)
+            
+            # 标记为已完成
+            path.pop()
+            state[class_name] = BLACK
+        
+        # 对所有未访问的节点执行 DFS
+        for rule in self.rules:
+            class_name = rule["class"]
+            if state[class_name] == WHITE:
+                dfs(class_name, [])
 
     def _apply_rule(self, rule: Dict[str, Any], blocks: List[Block]) -> None:
         """应用单条规则"""
