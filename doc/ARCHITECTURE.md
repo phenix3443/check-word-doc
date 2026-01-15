@@ -255,7 +255,7 @@ class TableBlock(Block):
     range:
       after: {class: title}
       before: {pattern: "^摘要："}
-  
+
   # 子元素：使用相对定位
   children:
     # 第一个：作者列表
@@ -263,13 +263,13 @@ class TableBlock(Block):
       match:
         position: first
         pattern: ".*[,，].*"
-    
+
     # 中间：作者单位（可变数量）
     - class: author-affiliation
       match:
         position: middle
         pattern: "^\\d+\\."
-    
+
     # 最后：通信作者
     - class: corresponding-author
       match:
@@ -278,11 +278,13 @@ class TableBlock(Block):
 ```
 
 **相对位置关键字：**
+
 - `first` - 父区域的第一个元素
 - `last` - 父区域的最后一个元素
 - `middle` - 父区域的中间元素（不包括首尾）
 
 **优势：**
+
 - ✅ 适应可变数量的元素
 - ✅ 语义清晰，体现层次结构
 - ✅ 类似 HTML 的 DOM 树结构

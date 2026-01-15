@@ -1,0 +1,84 @@
+# 数据论文 - 元素识别规则
+
+document:
+  classifiers:
+    # 1. 论文标题（第一段）
+    - class: title
+      match:
+        type: paragraph
+        position: 0
+
+    # 2. 作者区域（复合区域：标题和摘要之间）
+    - class: author-section
+      match:
+        type: paragraph
+        range:
+          after: { class: title }
+          before: { pattern: "^摘要：" }
+      # 作者区域内的子元素（使用相对定位）
+      children:
+        # 第一个元素：作者列表（包含逗号或顿号）
+        - class: author-list
+          match:
+            position: first
+            pattern: ".*[,，、].*"
+
+        # 中间元素：作者单位（以数字开头）
+        - class: author-affiliation
+          match:
+            position: middle
+            pattern: "^\\d+\\."
+
+        # 最后一个元素：通信作者（以*开头）
+        - class: corresponding-author
+          match:
+            position: last
+            pattern: "^\\*"
+
+    # 3. 中文摘要标题（以"摘要："开头，中文冒号）
+    - class: abstract-title
+      match:
+        type: paragraph
+        pattern: "^摘要："
+
+    # 4. 关键词（以"关键词："开头，中文冒号）
+    - class: keywords
+      match:
+        type: paragraph
+        pattern: "^关键词："
+
+    # 5. 英文摘要标题（以"Abstract:"开头）
+    - class: abstract-title-en
+      match:
+        type: paragraph
+        pattern: "^Abstract:"
+
+    # 6. 英文关键词（以"Keywords:"开头）
+    - class: keywords-en
+      match:
+        type: paragraph
+        pattern: "^Keywords:"
+
+    # 7. 一级标题（如"1 引言"）
+    - class: heading-1
+      match:
+        type: paragraph
+        pattern: "^\\d+\\s+\\S+"
+
+    # 8. 二级标题（如"1.1 背景"）
+    - class: heading-2
+      match:
+        type: paragraph
+        pattern: "^\\d+\\.\\d+\\s+\\S+"
+
+    # 9. 三级标题（如"1.1.1 详细内容"）
+    - class: heading-3
+      match:
+        type: paragraph
+        pattern: "^\\d+\\.\\d+\\.\\d+\\s+\\S+"
+
+    # 10. 参考文献标题（可能有冒号或没有）
+    - class: references-title
+      match:
+        type: paragraph
+        pattern: "^参考文献：?"
