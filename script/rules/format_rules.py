@@ -100,7 +100,7 @@ class FontStyleRule(Rule):
                     if not (self.font_name_alternatives and actual_font in self.font_name_alternatives):
                         issues.append(Issue(
                             code=self.id,
-                            severity=Severity.WARNING,
+                            severity=Severity.WARN,
                             message=f"{self.description}: 期望字体 '{self.expected_font_name}'，实际为 '{actual_font}'",
                             location=Location(
                                 block_index=block.index,
@@ -117,7 +117,7 @@ class FontStyleRule(Rule):
                 if abs(actual_size - self.expected_font_size) > self.font_size_tolerance:
                     issues.append(Issue(
                         code=self.id,
-                        severity=Severity.WARNING,
+                        severity=Severity.WARN,
                         message=f"{self.description}: 期望字号 {self.expected_font_size}，实际为 {actual_size}",
                         location=Location(
                             block_index=block.index,
@@ -233,7 +233,7 @@ class ParagraphFormatRule(Rule):
                     if abs(actual_spacing - self.line_spacing) > self.line_spacing_tolerance:
                         issues.append(Issue(
                             code=self.id,
-                            severity=Severity.WARNING,
+                            severity=Severity.WARN,
                             message=f"{self.description}: 期望行距 {self.line_spacing}倍，实际为 {actual_spacing}倍",
                             location=Location(
                                 block_index=block.index,
@@ -459,7 +459,7 @@ class MatchingRule(Rule):
             
             return [Issue(
                 code=self.id,
-                severity=Severity.WARNING,
+                severity=Severity.WARN,
                 message=message,
                 location=Location(
                     block_index=block.index,
@@ -556,7 +556,7 @@ class CountingRule(FinalizeRule):
         elif self.max_count is not None and count > self.max_count:
             issues.append(Issue(
                 code=self.id,
-                severity=Severity.WARNING,
+                severity=Severity.WARN,
                 message=f"{self.description}: 最多 {self.max_count} 个，实际为 {count} 个",
                 location=Location(block_index=0, kind="document", hint="(document)"),
                 evidence={"max": self.max_count, "actual": count}

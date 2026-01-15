@@ -327,8 +327,8 @@ class ChineseQuoteMatchingRule(Rule):
         issues: List[Issue] = []
 
         # 检查双引号配对
-        left_double = text.count(""")
-        right_double = text.count(""")
+        left_double = text.count("\u201c")  # "
+        right_double = text.count("\u201d")  # "
 
         if left_double != right_double:
             issues.append(
@@ -344,8 +344,8 @@ class ChineseQuoteMatchingRule(Rule):
             )
 
         # 检查单引号配对
-        left_single = text.count("'")
-        right_single = text.count("'")
+        left_single = text.count("\u2018")  # '
+        right_single = text.count("\u2019")  # '
 
         if left_single != right_single:
             issues.append(
