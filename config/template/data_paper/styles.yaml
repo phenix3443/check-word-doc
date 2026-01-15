@@ -141,7 +141,8 @@ document:
         space_before: 0.5行
         space_after: 0.5行
 
-    # 一级标题（如"1 数据采集"）
+    # 一级标题（如"1  数据采集和处理方法"）
+    # Word样式：Heading 2
     .heading-1:
       font:
         name_eastasia: 黑体
@@ -152,7 +153,8 @@ document:
         space_before: 0.5行
         space_after: 0.5行
 
-    # 二级标题（如"1.1 背景"）
+    # 二级标题（如"1.1  数据来源与组成"）
+    # Word样式：Heading 3
     .heading-2:
       font:
         name_eastasia: 黑体
@@ -161,7 +163,8 @@ document:
       paragraph:
         alignment: 左对齐
 
-    # 三级标题
+    # 三级标题（如"1.1.1  详细内容"）
+    # Word样式：Heading 4
     .heading-3:
       font:
         name_eastasia: 黑体
