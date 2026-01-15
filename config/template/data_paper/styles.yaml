@@ -141,6 +141,19 @@ document:
         space_before: 0.5行
         space_after: 0.5行
 
+    # 致谢标题（特殊的一级标题）
+    # 内容："致  谢"
+    # 格式要求：宋体，4号，段前、段后各0.5行距
+    .heading-acknowledgments:
+      font:
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
+        size: 四号
+      paragraph:
+        alignment: 左对齐
+        space_before: 0.5行
+        space_after: 0.5行
+
     # 一级标题（如"1  数据采集和处理方法"）
     # Word样式：Heading 2
     .heading-1:
