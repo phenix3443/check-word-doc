@@ -25,13 +25,11 @@ document:
         alignment: 居中
         space_before: 0.5行
         space_after: 0.5行
-        first_line_indent: 0字符
 
     # 作者区域（整体样式，可选）
     .author-section:
       paragraph:
         alignment: 居中
-        first_line_indent: 0字符
 
     # 作者列表
     .author-list:
@@ -41,7 +39,6 @@ document:
         size: 小四
       paragraph:
         alignment: 居中
-        first_line_indent: 0字符
 
     # 作者单位
     .author-affiliation:
@@ -49,7 +46,6 @@ document:
         size: 五号
       paragraph:
         alignment: 居中
-        first_line_indent: 0字符
 
     # 通信作者
     .corresponding-author:
@@ -57,7 +53,6 @@ document:
         size: 五号
       paragraph:
         alignment: 居中
-        first_line_indent: 0字符
 
     # 中文摘要标题
     .abstract-title:
@@ -67,7 +62,6 @@ document:
         bold: true
       paragraph:
         alignment: 左对齐
-        first_line_indent: 0字符
 
     # 关键词
     .keywords:
@@ -75,7 +69,6 @@ document:
         size: 小四
       paragraph:
         alignment: 左对齐
-        first_line_indent: 0字符
 
     # 英文摘要标题
     .abstract-title-en:
@@ -86,7 +79,6 @@ document:
         bold: true
       paragraph:
         alignment: 左对齐
-        first_line_indent: 0字符
 
     # 英文关键词
     .keywords-en:
@@ -94,7 +86,6 @@ document:
         size: 小四
       paragraph:
         alignment: 左对齐
-        first_line_indent: 0字符
 
     # 一级标题
     .heading-1:
@@ -106,7 +97,6 @@ document:
         alignment: 左对齐
         space_before: 0.5行
         space_after: 0.5行
-        first_line_indent: 0字符
 
     # 二级标题
     .heading-2:
@@ -116,7 +106,6 @@ document:
         bold: true
       paragraph:
         alignment: 左对齐
-        first_line_indent: 0字符
 
     # 三级标题
     .heading-3:
@@ -125,7 +114,6 @@ document:
         size: 小四
       paragraph:
         alignment: 左对齐
-        first_line_indent: 0字符
 
     # 参考文献标题
     .references-title:
@@ -135,4 +123,3 @@ document:
         bold: true
       paragraph:
         alignment: 左对齐
-        first_line_indent: 0字符
