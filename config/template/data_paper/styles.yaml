@@ -154,18 +154,16 @@ document:
         space_before: 0.5行
         space_after: 0.5行
 
-    # 数据作者分工职责标题（特殊的一级标题）
+    # 数据作者分工职责标题（特殊的二级标题，无编号）
     # 内容："数据作者分工职责"
-    # 格式要求：宋体，4号，段前、段后各0.5行距
+    # 格式要求：与二级标题相同 - 黑体，小四，加粗，左对齐
     .heading-author-contributions:
       font:
-        name_eastasia: 宋体
-        name_ascii: "Times New Roman"
-        size: 四号
+        name_eastasia: 黑体
+        size: 小四
+        bold: true
       paragraph:
         alignment: 左对齐
-        space_before: 0.5行
-        space_after: 0.5行
 
     # 一级标题（如"1  数据采集和处理方法"）
     # Word样式：Heading 2

@@ -118,14 +118,16 @@ document:
         type: paragraph
         pattern: "^\\s*致\\s+谢"
 
-    # 9. 数据作者分工职责标题（特殊的一级标题）
+    # 9. 数据作者分工职责标题（特殊的二级标题，无编号）
     # 内容：固定为"数据作者分工职责"
+    # 注意：虽然Word样式是Heading 1，但在文档结构中作为二级标题
+    # 使用独立的 class 名称，避免与编号的二级标题冲突
     - class: heading-author-contributions
       match:
         type: paragraph
         pattern: "^\\s*数据作者分工职责"
 
-    # 11. 一级标题（如"1  数据采集和处理方法"）
+    # 10. 一级标题（如"1  数据采集和处理方法"）
     # 格式：数字 + 空格 + 标题内容
     # 注意：可能有多个空格
     - class: heading-1
@@ -133,21 +135,21 @@ document:
         type: paragraph
         pattern: "^\\d+\\s+\\S+"
 
-    # 12. 二级标题（如"1.1  数据来源与组成"）
+    # 11. 二级标题（如"1.1  数据来源与组成"）
     # 格式：数字.数字 + 空格 + 标题内容
     - class: heading-2
       match:
         type: paragraph
         pattern: "^\\d+\\.\\d+\\s+\\S+"
 
-    # 13. 三级标题（如"1.1.1  详细内容"）
+    # 12. 三级标题（如"1.1.1  详细内容"）
     # 格式：数字.数字.数字 + 空格 + 标题内容
     - class: heading-3
       match:
         type: paragraph
         pattern: "^\\d+\\.\\d+\\.\\d+\\s+\\S+"
 
-    # 14. 参考文献标题（可能有冒号或没有）
+    # 13. 参考文献标题（可能有冒号或没有）
     - class: references-title
       match:
         type: paragraph
