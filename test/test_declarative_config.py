@@ -32,8 +32,8 @@ def test_declarative_config():
         traceback.print_exc()
         return False
     
-    # 检查是否是声明式格式
-    print(f"\n📝 配置格式: {'声明式' if loader.is_declarative_format() else '传统'}")
+    # 检查配置
+    print(f"\n📝 配置格式: 声明式")
     
     # 生成规则
     print("\n🔧 生成规则...")

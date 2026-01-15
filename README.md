@@ -1,13 +1,14 @@
 # docx-lint
 
-Word 文档格式检查工具 - 基于插件化规则引擎的 vNext 架构
+Word 文档格式检查工具 - 声明式配置驱动的文档规范检查系统
 
 ## 特性
 
-- ✅ **配置驱动**：通过 YAML 配置文件定义检查规则
+- ✅ **声明式配置**：直观描述文档结构，无需了解规则类实现
+- ✅ **自动单元转换**：支持 `三号`、`0.5行`、`2字符` 等人类可读单位
+- ✅ **自动规则生成**：从配置自动生成检查规则，无需修改代码
+- ✅ **高度抽象**：配置即文档规范，新增文档类型只需添加配置文件
 - ✅ **插件化架构**：规则插件化，易于扩展
-- ✅ **通用规则类**：一个规则类可服务多个规则 ID，减少代码重复 90%
-- ✅ **顺序保证**：通过 Walker 保持文档原始顺序，确保题注配对等检查准确
 - ✅ **统一输出**：所有规则输出统一的 Issue 格式
 - ✅ **多格式报告**：支持 Markdown 和 JSON 输出
 
@@ -20,83 +21,112 @@ Word 文档格式检查工具 - 基于插件化规则引擎的 vNext 架构
 ```bash
 # 安装依赖
 poetry install
-
-# 或者只安装运行时依赖
-poetry install --only main
 ```
 
 ### 使用
 
 ```bash
-# 检查文档
-poetry run python script/cli.py document.docx --config config/base.yaml
+# 检查文档（使用声明式配置）
+poetry run docx-lint document.docx --config config/data_paper_declarative.yaml
 
 # 输出 JSON 格式
-poetry run python script/cli.py document.docx --config config/base.yaml --format json
+poetry run docx-lint document.docx --config config/data_paper_declarative.yaml --format json
 
 # 保存报告到文件
-poetry run python script/cli.py document.docx --config config/base.yaml --out report.md
+poetry run docx-lint document.docx --config config/data_paper_declarative.yaml --out report.md
 ```
 
-### 使用脚本命令
+## 配置示例
 
-安装后可以直接使用 `docx-lint` 命令：
+声明式配置直观描述文档结构：
 
-```bash
-# 安装
-poetry install
-
-# 使用
-poetry run docx-lint document.docx --config config/base.yaml
+```yaml
+document:
+  # 默认设置
+  defaults:
+    font_size: 10.5pt
+    font_name_eastasia: 宋体
+    font_name_ascii: "Times New Roman"
+  
+  # 文档结构定义
+  structure:
+    # 标题（第一段）
+    - type: paragraph
+      name: 论文标题
+      content:
+        required: true
+        min_length: 5
+      font:
+        name_eastasia: 黑体
+        size: 三号  # 自动转换！
+      paragraph:
+        alignment: 居中
+        space_before: 0.5行  # 自动转换！
+        space_after: 0.5行
+    
+    # 作者信息（第二段）
+    - type: paragraph
+      name: 作者信息
+      content:
+        required: true
+      font:
+        size: 小四
+      paragraph:
+        alignment: 居中
+  
+  # 标题规则
+  headings:
+    styles: ["Heading 1", "Heading 2", "Heading 3"]
+    check_sequence: true
+    check_hierarchy: true
+  
+  # 参考文献规则
+  references:
+    heading: 参考文献
+    check_citations: true
 ```
+
+系统会自动生成所有必要的检查规则！
 
 ## 架构说明
 
-详见 [ARCHITECTURE.md](ARCHITECTURE.md)
+详见 [doc/DECLARATIVE_CONFIG.md](doc/DECLARATIVE_CONFIG.md)
 
 ### 核心概念
 
-1. **Block 统一遍历**：`Walker.iter_blocks()` 保持文档原始顺序
-2. **规则插件化**：所有检查封装为 `Rule`，输出统一 `Issue`
-3. **配置驱动**：规则通过 YAML 定义，动态创建实例
-4. **通用规则类**：一个类服务多个规则 ID
+1. **声明式配置**：描述"文档应该是什么样子"，而不是"用什么规则检查"
+2. **自动规则生成**：`RuleGenerator` 根据配置自动创建规则实例
+3. **自动单元转换**：`UnitConverter` 自动处理单位转换（pt、行、字符等）
+4. **规则插件化**：所有检查封装为通用 `Rule` 类
+5. **Block 统一遍历**：`Walker.iter_blocks()` 保持文档原始顺序
 
-### 通用规则类示例
+## 支持的检查类型
 
-```python
-# 一个 PresenceRule 类，服务 4 个规则 ID
-_RULE_CLASSES = {
-    "COV001": PresenceRule,  # 封面检查
-    "TOC001": PresenceRule,  # 目录检查
-    "FIG001": PresenceRule,  # 插图目录检查
-    "TBL001": PresenceRule,  # 附表目录检查
-}
-```
+系统根据声明式配置自动生成以下类型的规则：
 
-配置示例：
+### 内容检查
+- 段落存在性检查
+- 最小/最大长度检查
+- 内容必填检查
 
-```yaml
-rules:
-  - id: "COV001"
-    params:
-      keywords: ["题目", "作者"]  # 封面特定参数
-  
-  - id: "TOC001"
-    params:
-      title_text: "目录"         # 目录特定参数
-```
+### 字体检查
+- 字体名称检查（中文、西文）
+- 字体大小检查
+- 加粗、斜体检查
 
-## 已支持的检查规则
+### 段落格式检查
+- 对齐方式检查
+- 行距检查
+- 缩进和间距检查
 
-### 结构规则（7 个）
+### 标题检查
+- 标题编号连续性检查
+- 标题层级一致性检查
+- 标题格式检查
 
-- **COV001**: 文档必须包含封面
-- **TOC001**: 文档必须包含目录
-- **TOC002**: 目录页码必须连续
-- **TOC003**: 目录页码必须与实际一致（待完善）
-- **FIG002**: 插图目录页码必须连续
-- **FIG003**: 插图目录页码必须与实际一致（待完善）
-- **TBL003**: 附表目录页码必须与实际一致（待完善）
+### 参考文献检查
+- 引用完整性检查（双向检查）
+- 引用格式检查
 
 ### 标题规则（1 个）
 

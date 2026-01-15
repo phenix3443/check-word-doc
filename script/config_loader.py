@@ -189,11 +189,7 @@ class ConfigLoader:
 
     def _validate_config(self):
         """
-        Validate configuration structure.
-        
-        Supports two formats:
-        1. Legacy format: contains "rules" or "checks" section
-        2. Declarative format: contains "document" section
+        Validate declarative configuration structure.
 
         Raises:
             ConfigError: If configuration is invalid.
@@ -201,258 +197,23 @@ class ConfigLoader:
         if not isinstance(self.config, dict):
             raise ConfigError("Configuration must be a dictionary")
 
-        # Check if it's declarative format
-        if "document" in self.config:
-            self._validate_declarative_config()
-            return
+        # 必须包含 document 节
+        if "document" not in self.config:
+            raise ConfigError(
+                "配置文件必须使用声明式格式（包含 'document' 节）。\n"
+                "请参考 config/data_paper_declarative.yaml 示例。"
+            )
 
-        # Check legacy format
-        if "rules" not in self.config and "checks" not in self.config:
-            raise ConfigError("Configuration must contain 'rules', 'checks', or 'document' section")
-
-        if "rules" in self.config and not isinstance(self.config["rules"], list):
-            raise ConfigError("'rules' section must be a list")
-
-        if "checks" in self.config and not isinstance(self.config["checks"], (list, dict)):
-            raise ConfigError("'checks' section must be a list or dictionary")
-
-        if "checks" in self.config:
-            self._validate_checks_section()
-            self._validate_check_items()
-    
-    def _validate_declarative_config(self):
-        """
-        Validate declarative configuration structure.
-        
-        Declarative config format:
-        document:
-          defaults: {...}
-          structure: [...]
-          headings: {...}
-          references: {...}
-
-        Raises:
-            ConfigError: If declarative configuration is invalid.
-        """
         document_config = self.config.get("document", {})
         if not isinstance(document_config, dict):
             raise ConfigError("'document' section must be a dictionary")
-        
+
         # Optional: validate structure
         if "structure" in document_config:
             structure = document_config["structure"]
             if not isinstance(structure, list):
                 raise ConfigError("'document.structure' must be a list")
-    
-    def is_declarative_format(self) -> bool:
-        """Check if configuration uses declarative format.
-        
-        Returns:
-            True if declarative format, False if legacy format
-        """
-        return "document" in self.config
 
-    def _validate_checks_section(self):
-        """Validate checks section."""
-        checks = self.config["checks"]
-        valid_check_names = [
-            "structure",
-            "cover",
-            "table_of_contents",
-            "figure_list",
-            "table_list",
-            "paragraphs",
-            "headings",
-            "captions",
-            "references",
-            "attachments",
-            "headers",
-            "footers",
-            "page_numbers",
-        ]
-
-        if not isinstance(checks, list):
-            raise ConfigError("'checks' section must be a list")
-
-        for check_name in checks:
-            if not isinstance(check_name, str):
-                raise ConfigError(
-                    f"Check item must be a string, got {type(check_name)}"
-                )
-            if check_name not in valid_check_names:
-                raise ConfigError(
-                    f"Invalid check name: '{check_name}'. Valid names: {', '.join(valid_check_names)}"
-                )
-
-    def _validate_check_items(self):
-        """Validate individual check item configurations."""
-        check_items = [
-            "structure",
-            "cover",
-            "table_of_contents",
-            "figure_list",
-            "table_list",
-            "paragraphs",
-            "headings",
-            "captions",
-            "references",
-            "attachments",
-            "headers",
-            "footers",
-            "page_numbers",
-            "empty_lines",
-        ]
-
-        for item_name in check_items:
-            if item_name in self.config:
-                item_config = self.config[item_name]
-                if not isinstance(item_config, dict):
-                    raise ConfigError(f"Check item '{item_name}' must be a dictionary")
-
-                if "enabled" in item_config:
-                    if not isinstance(item_config["enabled"], bool):
-                        raise ConfigError(f"'{item_name}.enabled' must be a boolean")
-
-    def get_check_enabled(self, check_name: str) -> bool:
-        """
-        Check if a specific check is enabled.
-
-        Args:
-            check_name: Name of the check.
-
-        Returns:
-            True if check is enabled, False otherwise.
-        """
-        if "checks" not in self.config:
-            return False
-        checks = self.config["checks"]
-        # Support both list and dict formats for backward compatibility
-        if isinstance(checks, list):
-            return check_name in checks
-        elif isinstance(checks, dict):
-            return checks.get(check_name, False)
-        else:
-            return False
-
-    def get_check_config(self, check_name: str) -> Optional[Dict[str, Any]]:
-        """
-        Get configuration for a specific check.
-
-        Args:
-            check_name: Name of the check.
-
-        Returns:
-            Configuration dictionary for the check, or None if not found.
-        """
-        return self.config.get(check_name)
-
-    def get_format_config(
-        self, check_name: str, element_name: Optional[str] = None
-    ) -> Optional[Dict[str, Any]]:
-        """
-        Get format configuration for a check item.
-
-        Args:
-            check_name: Name of the check item.
-            element_name: Optional element name (e.g., 'title' for cover).
-
-        Returns:
-            Format configuration dictionary, or None if not found.
-        """
-        check_config = self.get_check_config(check_name)
-        if not check_config:
-            return None
-
-        format_config = check_config.get("format")
-        if not format_config:
-            return None
-
-        if element_name:
-            return format_config.get(element_name)
-
-        return format_config
-
-    def get_numbering_config(self, check_name: str) -> Optional[Dict[str, Any]]:
-        """
-        Get numbering configuration for a check item.
-
-        Args:
-            check_name: Name of the check item.
-
-        Returns:
-            Numbering configuration dictionary, or None if not found.
-        """
-        check_config = self.get_check_config(check_name)
-        if not check_config:
-            return None
-
-        return check_config.get("numbering")
-
-    def get_validation_config(self, check_name: str) -> Optional[Dict[str, Any]]:
-        """
-        Get validation configuration for a check item.
-
-        Args:
-            check_name: Name of the check item.
-
-        Returns:
-            Validation configuration dictionary, or None if not found.
-        """
-        check_config = self.get_check_config(check_name)
-        if not check_config:
-            return None
-
-        return check_config.get("validation")
-
-    def get_consistency_config(self, check_name: str) -> Optional[Dict[str, Any]]:
-        """
-        Get consistency configuration for a check item.
-
-        Args:
-            check_name: Name of the check item.
-
-        Returns:
-            Consistency configuration dictionary, or None if not found.
-        """
-        check_config = self.get_check_config(check_name)
-        if not check_config:
-            return None
-
-        return check_config.get("consistency")
-
-    def compile_regex_pattern(self, pattern: str) -> Optional[re.Pattern]:
-        """
-        Compile a regex pattern from configuration.
-
-        Args:
-            pattern: Regular expression pattern string.
-
-        Returns:
-            Compiled regex pattern, or None if pattern is invalid.
-        """
-        try:
-            return re.compile(pattern)
-        except re.error:
-            return None
-
-    def get_all_enabled_checks(self) -> List[str]:
-        """
-        Get list of all enabled check names.
-
-        Returns:
-            List of enabled check names.
-        """
-        if "checks" not in self.config:
-            return []
-
-        checks = self.config["checks"]
-        # Support both list and dict formats for backward compatibility
-        if isinstance(checks, list):
-            return list(checks)
-        elif isinstance(checks, dict):
-            return [name for name, enabled in checks.items() if enabled]
-        else:
-            return []
 
 
 def load_config(config_path: str) -> Dict[str, Any]:

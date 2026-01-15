@@ -1,9 +1,0 @@
-## 文档结构基线规则
-##
-## 注意：结构规则（如封面、目录等）因文档类型而异，不是所有文档都需要
-## 因此 structure.yaml 中不再包含任何规则
-## 这些规则应该在具体的文档模板配置中定义（如 data_paper_template.yaml）
-##
-version: "vnext"
-
-rules: []
