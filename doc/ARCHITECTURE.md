@@ -1,0 +1,366 @@
+# docx-lint 架构设计
+
+## 核心理念
+
+基于 **HTML/CSS 分离思想**，将文档检查分为两个独立的阶段：
+
+1. **语义标注阶段**：遍历文档，根据规则给元素添加 class（类似 HTML 的语义标签）
+2. **样式检查阶段**：根据 class 定义的样式规则检查元素格式（类似 CSS 样式定义）
+
+```
+┌─────────────┐      ┌──────────────┐      ┌─────────────┐
+│  Word 文档   │ ──→ │  语义标注     │ ──→ │  样式检查    │
+│  (docx)     │      │ (Classifier) │      │  (Checker)  │
+└─────────────┘      └──────────────┘      └─────────────┘
+     ↓                     ↓                      ↓
+  段落、表格           添加 class 属性          比对样式定义
+```
+
+## 类比 Web 前端
+
+| Web 开发 | docx-lint | 说明 |
+|---------|-----------|------|
+| HTML 元素 | Word 段落/表格 | 文档的基本组成单元 |
+| class 属性 | 语义标签 | 标识元素的语义角色 |
+| CSS 样式 | 格式规则 | 定义元素应有的样式 |
+| DOM 遍历 | Walker | 按顺序访问元素 |
+| CSS 选择器 | Classifier | 匹配和标注元素 |
+
+### 示例对比
+
+**Web 开发：**
+
+```html
+<!-- HTML: 内容 + 语义 -->
+<h1 class="title">文章标题</h1>
+<div class="author-info">
+  <p class="author-list">张三，李四</p>
+  <p class="affiliation">北京大学</p>
+</div>
+```
+
+```css
+/* CSS: 样式定义 */
+.title {
+  font-family: "黑体";
+  font-size: 16pt;
+  text-align: center;
+}
+
+.author-list {
+  font-family: "楷体";
+  font-size: 12pt;
+  text-align: center;
+}
+```
+
+**docx-lint：**
+
+```yaml
+# 配置：语义识别规则
+classifiers:
+  - class: title
+    match:
+      type: paragraph
+      position: 0
+
+  - class: author-list
+    match:
+      type: paragraph
+      position: 1
+      pattern: ".*[,，].*"
+
+# 配置：样式定义
+styles:
+  .title:
+    font:
+      name_eastasia: 黑体
+      size: 三号
+    paragraph:
+      alignment: 居中
+
+  .author-list:
+    font:
+      name_eastasia: 楷体
+      size: 小四
+    paragraph:
+      alignment: 居中
+```
+
+## 系统架构
+
+### 整体流程
+
+```
+1. 加载配置
+   ├── classifiers（元素识别规则）
+   └── styles（样式定义）
+
+2. 遍历文档（Walker）
+   └── 顺序访问所有段落和表格
+
+3. 语义标注（Classifier）
+   ├── 根据 classifiers 规则匹配元素
+   ├── 给匹配的元素添加 class 属性
+   └── 支持多种匹配方式：
+       ├── 绝对位置（position）
+       ├── 内容模式（pattern）
+       ├── 相对位置（after/before）
+       └── 范围定位（range）
+
+4. 样式检查（StyleChecker）
+   ├── 遍历所有带 class 的元素
+   ├── 查找对应的样式定义
+   ├── 检查元素的实际格式
+   └── 生成 Issue 报告
+
+5. 输出报告
+   └── Markdown 或 JSON 格式
+```
+
+### 核心模块
+
+#### 1. Classifier（分类器）
+
+负责元素识别和 class 标注。
+
+```python
+class Classifier:
+    """元素分类器"""
+
+    def classify(self, blocks: List[Block]) -> List[Block]:
+        """给文档元素添加 class 属性"""
+        for block in blocks:
+            for rule in self.rules:
+                if self._match(block, rule, blocks):
+                    block.add_class(rule['class'])
+        return blocks
+
+    def _match(self, block: Block, rule: dict, context: List[Block]) -> bool:
+        """判断元素是否匹配规则"""
+        # 支持多种匹配方式
+        # - position: 绝对位置
+        # - pattern: 内容模式
+        # - range: 范围定位
+        # - after/before: 相对位置
+        pass
+```
+
+#### 2. StyleChecker（样式检查器）
+
+负责根据 class 检查元素样式。
+
+```python
+class StyleChecker:
+    """样式检查器"""
+
+    def check(self, blocks: List[Block]) -> List[Issue]:
+        """检查所有元素的样式"""
+        issues = []
+        for block in blocks:
+            for class_name in block.classes:
+                style_def = self.styles.get(f'.{class_name}')
+                if style_def:
+                    issues.extend(self._check_style(block, style_def))
+        return issues
+
+    def _check_style(self, block: Block, style_def: dict) -> List[Issue]:
+        """检查单个元素的样式"""
+        # 检查字体、段落格式等
+        pass
+```
+
+#### 3. Block（文档元素）
+
+扩展后的 Block 模型，支持 class 属性。
+
+```python
+@dataclass
+class Block:
+    """文档元素基类"""
+    index: int
+    classes: List[str] = field(default_factory=list)
+
+    def add_class(self, class_name: str):
+        """添加 class"""
+        if class_name not in self.classes:
+            self.classes.append(class_name)
+
+    def has_class(self, class_name: str) -> bool:
+        """检查是否有指定 class"""
+        return class_name in self.classes
+
+@dataclass
+class ParagraphBlock(Block):
+    """段落元素"""
+    paragraph: Paragraph
+
+@dataclass
+class TableBlock(Block):
+    """表格元素"""
+    table: Table
+```
+
+## 匹配规则详解
+
+### 1. 绝对位置匹配
+
+```yaml
+- class: title
+  match:
+    type: paragraph
+    position: 0  # 文档第一个段落
+```
+
+### 2. 内容模式匹配
+
+```yaml
+- class: abstract
+  match:
+    type: paragraph
+    pattern: "^摘要[:：]"  # 以"摘要："开头
+```
+
+### 3. 相对位置匹配
+
+```yaml
+- class: author-list
+  match:
+    type: paragraph
+    after: {class: title}  # 在 title 之后
+    offset: 0  # 紧接着
+```
+
+### 4. 范围匹配
+
+```yaml
+- class: author-affiliation
+  match:
+    type: paragraph
+    range:
+      after: {class: author-list}
+      before: {class: abstract}
+    pattern: "^\\d+\\."  # 范围内，且以数字开头
+```
+
+### 5. 组合匹配
+
+```yaml
+- class: corresponding-author
+  match:
+    type: paragraph
+    range:
+      after: {class: author-list}
+      before: {class: abstract}
+    pattern: "^\\*"  # 范围内，且以 * 开头
+    position: last  # 范围内的最后一个
+```
+
+## 样式定义详解
+
+### 基本语法
+
+```yaml
+styles:
+  .class-name:
+    font:
+      name_eastasia: 字体名
+      name_ascii: 西文字体名
+      size: 字号
+      bold: true/false
+      italic: true/false
+    paragraph:
+      alignment: 对齐方式
+      line_spacing: 行距
+      first_line_indent: 首行缩进
+      space_before: 段前间距
+      space_after: 段后间距
+```
+
+### 样式继承（未来扩展）
+
+```yaml
+styles:
+  # 基础样式
+  .paragraph:
+    font:
+      size: 小四
+    paragraph:
+      line_spacing: 1.5倍
+
+  # 继承基础样式
+  .author-info:
+    extends: .paragraph
+    font:
+      name_eastasia: 楷体  # 覆盖字体
+```
+
+## 配置文件结构
+
+完整的配置文件包含三部分：
+
+```yaml
+document:
+  # 1. 元素识别规则
+  classifiers:
+    - class: title
+      match: {...}
+    - class: abstract
+      match: {...}
+
+  # 2. 样式定义
+  styles:
+    .title:
+      font: {...}
+      paragraph: {...}
+    .abstract:
+      font: {...}
+
+  # 3. 全局默认样式（可选）
+  defaults:
+    font:
+      size: 小四
+      name_eastasia: 宋体
+    paragraph:
+      line_spacing: 1.5倍
+```
+
+## 调试支持
+
+### 1. 输出文档结构
+
+可以输出文档的 class 标注结果，方便调试：
+
+```bash
+poetry run docx-lint document.docx --config config.yaml --debug-structure
+
+# 输出：
+# [0] .title: "数据论文标题"
+# [1] .author-list: "张三¹，李四²"
+# [2] .author-affiliation: "1. 北京大学，北京·100871"
+# [3] .author-affiliation: "2. 清华大学，北京·100084"
+# [4] .corresponding-author: "* 通信作者：..."
+# [5] .abstract: "摘要：本文介绍..."
+```
+
+### 2. 可视化匹配过程
+
+```bash
+poetry run docx-lint document.docx --config config.yaml --verbose
+
+# 输出：
+# [Classifier] Checking block 0
+#   - Rule 'title' (position: 0): ✓ MATCH
+#   - Added class: title
+# [Classifier] Checking block 1
+#   - Rule 'author-list' (after: title, pattern: ".*[,，].*"): ✓ MATCH
+#   - Added class: author-list
+```
+
+## 优势
+
+1. ✅ **关注点分离**：语义识别 vs 样式检查
+2. ✅ **直观易懂**：类似 HTML/CSS，学习曲线低
+3. ✅ **灵活强大**：支持多种匹配方式组合
+4. ✅ **易于调试**：可输出 class 标注结果
+5. ✅ **可扩展**：未来可支持样式继承、变量等高级特性

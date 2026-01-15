@@ -134,9 +134,7 @@ class ConfigLoader:
         loaded_files.remove(str(file_path))
         return config
 
-    def _deep_merge(
-        self, base: Dict[str, Any], override: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def _deep_merge(self, base: Dict[str, Any], override: Dict[str, Any]) -> Dict[str, Any]:
         """
         Deep merge two dictionaries, with override taking precedence.
 
@@ -152,11 +150,7 @@ class ConfigLoader:
             if key == "rules" and isinstance(result.get(key), list) and isinstance(value, list):
                 result[key] = list(result.get(key) or []) + list(value or [])
                 continue
-            if (
-                key in result
-                and isinstance(result[key], dict)
-                and isinstance(value, dict)
-            ):
+            if key in result and isinstance(result[key], dict) and isinstance(value, dict):
                 result[key] = self._deep_merge(result[key], value)
             else:
                 result[key] = value
@@ -213,7 +207,6 @@ class ConfigLoader:
             structure = document_config["structure"]
             if not isinstance(structure, list):
                 raise ConfigError("'document.structure' must be a list")
-
 
 
 def load_config(config_path: str) -> Dict[str, Any]:

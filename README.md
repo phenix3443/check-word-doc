@@ -47,7 +47,7 @@ document:
     font_size: 10.5pt
     font_name_eastasia: 宋体
     font_name_ascii: "Times New Roman"
-  
+
   # 文档结构定义
   structure:
     # 标题（第一段）
@@ -63,7 +63,7 @@ document:
         alignment: 居中
         space_before: 0.5行  # 自动转换！
         space_after: 0.5行
-    
+
     # 作者信息（第二段）
     - type: paragraph
       name: 作者信息
@@ -73,13 +73,13 @@ document:
         size: 小四
       paragraph:
         alignment: 居中
-  
+
   # 标题规则
   headings:
     styles: ["Heading 1", "Heading 2", "Heading 3"]
     check_sequence: true
     check_hierarchy: true
-  
+
   # 参考文献规则
   references:
     heading: 参考文献
@@ -105,26 +105,31 @@ document:
 系统根据声明式配置自动生成以下类型的规则：
 
 ### 内容检查
+
 - 段落存在性检查
 - 最小/最大长度检查
 - 内容必填检查
 
 ### 字体检查
+
 - 字体名称检查（中文、西文）
 - 字体大小检查
 - 加粗、斜体检查
 
 ### 段落格式检查
+
 - 对齐方式检查
 - 行距检查
 - 缩进和间距检查
 
 ### 标题检查
+
 - 标题编号连续性检查
 - 标题层级一致性检查
 - 标题格式检查
 
 ### 参考文献检查
+
 - 引用完整性检查（双向检查）
 - 引用格式检查
 
@@ -178,7 +183,7 @@ import:
 rules:
   - id: "PAR003"
     enabled: false  # 禁用某个规则
-  
+
   - id: "T001"
     params:
       min_rows: 3
