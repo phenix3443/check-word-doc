@@ -17,8 +17,38 @@ document:
       severity: error
       message: "多个作者时，作者单位必须以数字编号开头（如：1. 单位名称）"
 
-    # r-002: 通讯作者标记规则（作者列表中）
+    # r-002: 作者列表分隔符规则（多作者）
     - id: r-002
+      name: 作者列表分隔符规则（多作者）
+      description: 多个作者时，作者之间必须使用中文逗号（，）分隔
+      applies_to: author-list
+      condition:
+        # 条件：包含多个作者名（通过检测是否有数字后跟逗号来判断）
+        class: author-list
+        pattern: "\\d+[*]?，"
+      check:
+        # 检查：必须使用中文逗号，不能使用英文逗号或其他分隔符
+        # 格式：作者名+数字[+星号]，作者名+数字[+星号]
+        # 排除：英文逗号(,)、分号(;)、中文分号(；)、顿号(、)
+        pattern: "^[^,;；、]+\\d+[*]?(，[^,;；、]+\\d+[*]?)*$"
+      severity: error
+      message: "多个作者之间必须使用中文逗号（，）分隔，不能使用英文逗号或其他分隔符"
+
+    # r-003: 作者编号规则
+    - id: r-003
+      name: 作者编号规则
+      description: 每个作者后面必须有数字编号（表示单位）
+      applies_to: author-list
+      check:
+        # 检查：每个作者名后都有数字
+        # 注意：这个规则检查是否所有作者都有编号
+        # 格式示例：王嘉平1*，汪浩2
+        pattern: "\\d+"
+      severity: error
+      message: "每个作者后面必须有数字编号（表示作者单位）"
+
+    # r-004: 通讯作者标记规则（作者列表中）
+    - id: r-004
       name: 通讯作者标记规则（作者列表中）
       description: 通讯作者的编号后必须有星号（星号表示通讯作者，不是第一作者）
       applies_to: author-list
@@ -30,8 +60,8 @@ document:
       severity: error
       message: "通讯作者的编号后必须有星号（如：王嘉平1*），星号表示该作者为通讯作者"
 
-    # r-003: 通信作者标记规则
-    - id: r-003
+    # r-005: 通信作者标记规则
+    - id: r-005
       name: 通信作者标记规则
       description: 通信作者信息必须以星号开头
       applies_to: corresponding-author
@@ -40,8 +70,8 @@ document:
       severity: error
       message: "通信作者信息必须以星号开头"
 
-    # r-004: 作者单位格式规则（多作者）
-    - id: r-004
+    # r-006: 作者单位格式规则（多作者）
+    - id: r-006
       name: 作者单位格式规则（多作者）
       description: 多个作者时，单位格式必须为"编号. 单位/机构，城市  邮编"
       applies_to: author-affiliation
@@ -65,8 +95,8 @@ document:
       severity: error
       message: "作者单位格式错误，应为：编号. 单位/机构，城市  邮编（注意：城市和邮编之间有两个空格）"
 
-    # r-005: 作者单位格式规则（单作者）
-    - id: r-005
+    # r-007: 作者单位格式规则（单作者）
+    - id: r-007
       name: 作者单位格式规则（单作者）
       description: 单个作者时，单位格式必须为"单位/机构，城市  邮编"（无编号）
       applies_to: author-affiliation
@@ -83,8 +113,38 @@ document:
 
     # ========== 英文部分规则 ==========
 
-    # r-006: 英文作者单位编号规则
-    - id: r-006
+    # r-008: 英文作者列表分隔符规则（多作者）
+    - id: r-008
+      name: 英文作者列表分隔符规则（多作者）
+      description: 多个英文作者时，作者之间必须使用英文逗号+空格(, )分隔
+      applies_to: author-list-en
+      condition:
+        # 条件：包含多个作者名
+        class: author-list-en
+        pattern: ","
+      check:
+        # 检查：必须使用英文逗号+空格
+        # 格式：Name1*, Name2
+        # 注意：英文作者名后也有数字（可选）和星号（通讯作者）
+        pattern: "^[^,，；;]+,\\s+[^,，；;]+"
+      severity: error
+      message: "多个英文作者之间必须使用英文逗号+空格(, )分隔"
+
+    # r-009: 英文作者编号规则
+    - id: r-009
+      name: 英文作者编号规则
+      description: 每个英文作者后面可以有数字编号（表示单位）
+      applies_to: author-list-en
+      check:
+        # 检查：英文作者名格式
+        # 格式示例：WANG Jiaping*, WANG Hao
+        # 注意：英文作者名通常不带数字，但通讯作者有星号
+        pattern: "[A-Z]"
+      severity: error
+      message: "英文作者名必须包含大写字母"
+
+    # r-010: 英文作者单位编号规则
+    - id: r-010
       name: 英文作者单位编号规则
       description: 多个作者时，英文作者单位必须以数字编号开头
       applies_to: author-affiliation-en
@@ -96,8 +156,8 @@ document:
       severity: error
       message: "多个作者时，英文作者单位必须以数字编号开头（如：1. Affiliation）"
 
-    # r-007: 英文通讯作者邮箱格式
-    - id: r-007
+    # r-011: 英文通讯作者邮箱格式
+    - id: r-011
       name: 英文通讯作者邮箱格式
       description: 英文通讯作者信息必须以"*Email:"开头
       applies_to: corresponding-author-en
@@ -106,8 +166,8 @@ document:
       severity: error
       message: "英文通讯作者信息必须以'*Email:'开头"
 
-    # r-008: 英文作者单位格式规则（多作者）
-    - id: r-008
+    # r-012: 英文作者单位格式规则（多作者）
+    - id: r-012
       name: 英文作者单位格式规则（多作者）
       description: 多个作者时，英文单位格式必须为"编号. Affiliation, City Postal Code, Country"
       applies_to: author-affiliation-en
@@ -121,8 +181,8 @@ document:
       severity: error
       message: "英文作者单位格式错误，应为：编号. Affiliation, City Postal Code, Country"
 
-    # r-009: 英文作者单位格式规则（单作者）
-    - id: r-009
+    # r-013: 英文作者单位格式规则（单作者）
+    - id: r-013
       name: 英文作者单位格式规则（单作者）
       description: 单个作者时，英文单位格式必须为"Affiliation, City Postal Code, Country"（无编号）
       applies_to: author-affiliation-en

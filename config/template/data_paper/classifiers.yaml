@@ -61,7 +61,7 @@ document:
         type: paragraph
         after:
           class: keywords
-          offset: 0  # 紧跟在 keywords 之后
+          offset: 0 # 紧跟在 keywords 之后
 
     # 6. 英文作者信息（复合结构，位于英文标题和英文摘要之间）
     - class: author-section-en
