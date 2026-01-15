@@ -128,7 +128,20 @@ document:
         line_spacing: 1.15倍
         alignment: 两端对齐
 
-    # 一级标题
+    # 引言标题（特殊的一级标题，但使用 Heading 2 样式）
+    # 内容："引  言" 或 "概  述"
+    # 格式要求：宋体，4号，段前、段后各0.5行距
+    .heading-introduction:
+      font:
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
+        size: 四号
+      paragraph:
+        alignment: 左对齐
+        space_before: 0.5行
+        space_after: 0.5行
+
+    # 一级标题（如"1 数据采集"）
     .heading-1:
       font:
         name_eastasia: 黑体
@@ -139,7 +152,7 @@ document:
         space_before: 0.5行
         space_after: 0.5行
 
-    # 二级标题
+    # 二级标题（如"1.1 背景"）
     .heading-2:
       font:
         name_eastasia: 黑体
