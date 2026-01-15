@@ -1,0 +1,39 @@
+# 数据论文 - 内容规则检查
+
+document:
+  rules:
+    # r-001: 作者单位编号规则
+    - id: r-001
+      name: 作者单位编号规则
+      description: 多个作者时，作者单位必须以数字编号开头
+      applies_to: author-affiliation # 应用到哪个 class
+      condition:
+        # 条件：author-list 中包含多个作者（有逗号或顿号）
+        class: author-list
+        pattern: ".*[,，、].*"
+      check:
+        # 检查：author-affiliation 必须以数字开头
+        pattern: "^\\d+\\."
+      severity: error
+      message: "多个作者时，作者单位必须以数字编号开头（如：1. 单位名称）"
+
+    # r-002: 第一作者标记规则
+    - id: r-002
+      name: 第一作者标记规则
+      description: 第一作者的编号后必须有星号
+      applies_to: author-list
+      check:
+        # 检查：包含 数字+星号 的模式
+        pattern: "\\d+\\*"
+      severity: error
+      message: "第一作者的编号后必须有星号（如：王嘉平1*）"
+
+    # r-003: 通信作者标记规则
+    - id: r-003
+      name: 通信作者标记规则
+      description: 通信作者信息必须以星号开头
+      applies_to: corresponding-author
+      check:
+        pattern: "^\\*"
+      severity: error
+      message: "通信作者信息必须以星号开头"

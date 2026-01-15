@@ -29,6 +29,7 @@ document:
 
         # 中间元素：作者单位
         # 位于 author-list 和 corresponding-author 之间
+        # 注意：是否以数字开头由 rules.yaml 中的条件规则检查
         - class: author-affiliation
           match:
             position:

@@ -4,14 +4,16 @@
 # config/template/data_paper/
 # ├── config.yaml          # 主配置（本文件）
 # ├── classifiers.yaml     # 元素识别规则
-# └── styles.yaml          # 样式定义（包含 defaults）
+# ├── styles.yaml          # 样式定义（包含 defaults）
+# └── rules.yaml           # 内容规则检查
 #
 # 优势：
-# - 关注点分离：识别规则和样式定义分开管理
+# - 关注点分离：识别、样式、规则分开管理
 # - 易于维护：每个文件职责单一
 # - 可复用：可以在不同配置中引用相同的规则
 
 # 导入模块化配置
 import:
   - classifiers.yaml # 元素识别规则
-  - styles.yaml # 样式定义（包含 defaults 和 styles）
+  - styles.yaml      # 样式定义（包含 defaults 和 styles）
+  - rules.yaml       # 内容规则检查
