@@ -362,5 +362,35 @@ poetry run docx-lint document.docx --config config.yaml --verbose
 1. ✅ **关注点分离**：语义识别 vs 样式检查
 2. ✅ **直观易懂**：类似 HTML/CSS，学习曲线低
 3. ✅ **灵活强大**：支持多种匹配方式组合
-4. ✅ **易于调试**：可输出 class 标注结果
-5. ✅ **可扩展**：未来可支持样式继承、变量等高级特性
+4. ✅ **多 class 支持**：一个元素可以有多个 class（如 HTML）
+5. ✅ **易于调试**：可输出 class 标注结果
+6. ✅ **可扩展**：未来可支持样式继承、变量等高级特性
+
+## 核心特性
+
+### 1. 多 class 支持
+
+完全类似 HTML，一个元素可以同时拥有多个 class：
+
+```yaml
+classifiers:
+  # 通用分类
+  - class: paragraph
+    match: {type: paragraph}
+  
+  # 特定分类
+  - class: title
+    match: {position: 0}
+  
+  # 特殊标记
+  - class: important
+    match: {position: 0}
+
+# 结果：第一段会有 class="paragraph title important"
+```
+
+这使得我们可以：
+- 定义通用样式（如 `.paragraph`）
+- 定义特定样式（如 `.title`）
+- 定义特殊样式（如 `.important`）
+- 样式可以叠加和组合

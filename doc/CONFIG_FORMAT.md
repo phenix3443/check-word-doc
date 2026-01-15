@@ -165,6 +165,31 @@ before: {pattern: "^摘要[:：]"}
     pattern: "^\\*"  # 必须以 * 开头
 ```
 
+### 多 class 支持 ⭐
+
+**重要特性**：一个元素可以匹配多个规则，拥有多个 class（类似 HTML）。
+
+```yaml
+# 示例：让标题同时拥有多个 class
+classifiers:
+  - class: title
+    match: {position: 0}
+  
+  - class: important
+    match: {position: 0}
+  
+  - class: first-element
+    match: {position: 0}
+
+# 结果：第一个段落会有 3 个 class
+# <p class="title important first-element">...</p>
+```
+
+**应用场景：**
+- 通用样式 + 特定样式组合
+- 多个维度的分类（位置 + 内容 + 类型）
+- 样式继承和组合
+
 ### 匹配顺序
 
 classifiers 按照定义顺序执行：
@@ -432,7 +457,29 @@ A: 检查以下几点：
 
 ### Q: 一个元素可以有多个 class 吗？
 
-A: 可以！一个元素可以匹配多个规则，拥有多个 class。样式检查会检查所有 class 对应的样式。
+A: **可以！** 这是我们系统的重要特性，完全类似 HTML。
+
+一个元素可以匹配多个规则，拥有多个 class。样式检查会检查所有 class 对应的样式。
+
+```yaml
+# 示例：多个规则匹配同一元素
+classifiers:
+  - class: heading        # 通用：标题类
+    match: {pattern: "^\\d+"}
+  
+  - class: level-1        # 特定：一级标题
+    match: {pattern: "^\\d+\\.\\s"}
+  
+  - class: important      # 特殊标记
+    match: {pattern: "^1\\."}
+
+# 结果："1. 引言" 会有 3 个 class: heading, level-1, important
+```
+
+**优势：**
+- 可以定义通用样式（如 `.heading`）和特殊样式（如 `.important`）
+- 类似 CSS 的 class 组合思想
+- 灵活的样式复用
 
 ### Q: 如何匹配可变数量的元素？
 
