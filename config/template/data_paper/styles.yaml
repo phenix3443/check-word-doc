@@ -1,6 +1,18 @@
 # 数据论文 - 样式定义
 
 document:
+  # 全局默认样式
+  defaults:
+    font:
+      size: 小四 # 12pt
+      name_eastasia: 宋体
+      name_ascii: "Times New Roman"
+    paragraph:
+      line_spacing: 1.15倍 # 模板使用 1.15 倍行距
+      alignment: 两端对齐
+      first_line_indent: 2字符
+
+  # 各元素样式定义
   styles:
     # 论文标题
     # 要求：居中，中文黑体，西文Times New Roman，3号，段前、段后各0.5行距
