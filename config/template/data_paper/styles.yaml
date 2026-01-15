@@ -4,7 +4,7 @@ document:
   # 全局默认样式
   defaults:
     font:
-      size: 小四 # 12pt
+      size: 五号 # 10.5pt
       name_eastasia: 宋体
       name_ascii: "Times New Roman"
     paragraph:
