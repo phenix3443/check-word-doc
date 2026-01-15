@@ -37,3 +37,35 @@ document:
         pattern: "^\\*"
       severity: error
       message: "通信作者信息必须以星号开头"
+
+    # r-004: 作者单位格式规则（多作者）
+    - id: r-004
+      name: 作者单位格式规则（多作者）
+      description: 多个作者时，单位格式必须为"编号. 单位/机构，城市  邮编"
+      applies_to: author-affiliation
+      condition:
+        # 条件：有多个作者（需要编号）
+        class: author-list
+        pattern: ".*[,，、].*"
+      check:
+        # 格式：编号. 单位名称，城市  邮编
+        # 注意：城市和邮编之间有两个空格
+        pattern: "^\\d+\\.\\s+.+，.+\\s{2,}\\d{6}$"
+      severity: error
+      message: "作者单位格式错误，应为：编号. 单位/机构，城市  邮编（注意：城市和邮编之间有两个空格）"
+
+    # r-005: 作者单位格式规则（单作者）
+    - id: r-005
+      name: 作者单位格式规则（单作者）
+      description: 单个作者时，单位格式必须为"单位/机构，城市  邮编"（无编号）
+      applies_to: author-affiliation
+      condition:
+        # 条件：只有一个作者（不需要编号）
+        class: author-list
+        pattern: "^[^,，、]+$"
+      check:
+        # 格式：单位名称，城市  邮编（无编号）
+        # 注意：城市和邮编之间有两个空格
+        pattern: "^[^\\d].+，.+\\s{2,}\\d{6}$"
+      severity: error
+      message: "作者单位格式错误，应为：单位/机构，城市  邮编（注意：城市和邮编之间有两个空格，无需编号）"
