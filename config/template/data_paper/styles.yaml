@@ -204,3 +204,11 @@ document:
         bold: true
       paragraph:
         alignment: 左对齐
+
+    # 图片段落（通用样式）
+    # 要求：居中对齐，无首行缩进
+    # 注意：这是一个通用样式规则，适用于所有包含图片的段落
+    .figure:
+      paragraph:
+        alignment: 居中
+        first_line_indent: 0字符
