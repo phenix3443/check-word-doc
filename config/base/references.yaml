@@ -16,9 +16,9 @@ rules:
     enabled: true
     params:
       description: "参考文献必须在正文中被引用"
-      check_superscript_citation: true  # 是否检查上标引用（目前简化版只检查 [数字] 格式）
-      reference_heading: "参考文献"  # 参考文献章节的标题文本
-      citation_pattern: "^\\[\\d+(-\\d+)?(,\\s*\\d+)*\\]$"  # 引用模式（支持 [1]、[1-3]、[1,2] 等）
+      check_superscript_citation: true # 是否检查上标引用（目前简化版只检查 [数字] 格式）
+      reference_heading: "参考文献" # 参考文献章节的标题文本
+      citation_pattern: "^\\[\\d+(-\\d+)?(,\\s*\\d+)*\\]$" # 引用模式（支持 [1]、[1-3]、[1,2] 等）
 
   # ============================================================================
   # 引用有效性检查（正文 → 列表）
@@ -27,5 +27,5 @@ rules:
     enabled: true
     params:
       description: "正文引用必须在参考文献列表中存在"
-      reference_heading: "参考文献"  # 参考文献章节的标题文本
-      citation_pattern: "\\[(\\d+)\\]"  # 引用模式（提取引用编号）
+      reference_heading: "参考文献" # 参考文献章节的标题文本
+      citation_pattern: "\\[(\\d+)\\]" # 引用模式（提取引用编号）

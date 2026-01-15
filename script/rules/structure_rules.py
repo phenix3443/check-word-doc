@@ -50,9 +50,7 @@ class PresenceRule(FinalizeRule):
         # 确定检查范围
         blocks_to_check = ctx.blocks
         if self.check_first_n_blocks:
-            blocks_to_check = ctx.blocks[
-                : min(self.check_first_n_blocks, len(ctx.blocks))
-            ]
+            blocks_to_check = ctx.blocks[: min(self.check_first_n_blocks, len(ctx.blocks))]
 
         # 检查是否找到匹配的元素
         found = False
@@ -92,9 +90,7 @@ class PresenceRule(FinalizeRule):
                     code=self.id,
                     severity=Severity.ERROR,
                     message=f"{self.description}",
-                    location=Location(
-                        block_index=0, kind="document", hint="(document)"
-                    ),
+                    location=Location(block_index=0, kind="document", hint="(document)"),
                 )
             ]
 
@@ -149,9 +145,7 @@ class PageContinuityRule(FinalizeRule):
             # 检查是否匹配样式
             if self.style_prefixes:
                 matches = any(
-                    style_name.startswith(prefix)
-                    for prefix in self.style_prefixes
-                    if prefix
+                    style_name.startswith(prefix) for prefix in self.style_prefixes if prefix
                 )
                 if not matches:
                     continue
@@ -165,9 +159,7 @@ class PageContinuityRule(FinalizeRule):
             if match:
                 try:
                     page_num = int(match.group(1))
-                    entries.append(
-                        {"block_index": b.index, "text": text, "page_num": page_num}
-                    )
+                    entries.append({"block_index": b.index, "text": text, "page_num": page_num})
                 except (ValueError, IndexError):
                     pass
 
@@ -369,7 +361,7 @@ class HeadingNumberingRule(FinalizeRule):
 @dataclass
 class HeadingHierarchyRule(FinalizeRule):
     """标题编号层级一致性检查规则
-    
+
     检查子标题的编号前缀是否与父标题一致
     例如：2.3 的子标题应该是 2.3.1，不能是 2.4.1
     """
@@ -450,7 +442,7 @@ class HeadingHierarchyRule(FinalizeRule):
                 # 找到直接父级（应该是栈顶的标题，且级别 = level - 1）
                 expected_parent_level = level - 1
                 parent = None
-                
+
                 # 从栈顶向下查找对应级别的父标题
                 for p in reversed(parent_stack):
                     if p["level"] == expected_parent_level:
