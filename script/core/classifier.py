@@ -37,14 +37,24 @@ class PositionMatcher(Matcher):
     Examples:
         position: 0  # 第一个元素
         position: -1  # 最后一个元素
+        position: "first"  # 第一个（字符串形式）
+        position: "last"  # 最后一个（字符串形式）
     """
 
-    def __init__(self, position: int):
+    def __init__(self, position):
         self.position = position
 
     def match(self, block: Block, context: List[Block]) -> bool:
-        # 支持负数索引
-        if self.position < 0:
+        # 支持字符串形式的位置
+        if isinstance(self.position, str):
+            if self.position == "first":
+                target_index = 0
+            elif self.position == "last":
+                target_index = len(context) - 1
+            else:
+                return False
+        # 支持数字索引
+        elif self.position < 0:
             target_index = len(context) + self.position
         else:
             target_index = self.position
@@ -224,6 +234,59 @@ class RangeMatcher(Matcher):
         return None
 
 
+class RelativePositionInRangeMatcher(Matcher):
+    """相对于父区域的位置匹配器
+    
+    在指定的 parent_range 范围内，匹配相对位置的元素。
+    
+    Examples:
+        position: first   # 范围内的第一个
+        position: last    # 范围内的最后一个
+        position: middle  # 范围内的中间元素（不包括首尾）
+        position: 0       # 范围内的第 0 个
+    """
+
+    def __init__(self, position, parent_range: List[Block]):
+        """
+        Args:
+            position: 相对位置（'first', 'last', 'middle', 或数字索引）
+            parent_range: 父区域的块列表
+        """
+        self.position = position
+        self.parent_range = parent_range
+
+    def match(self, block: Block, context: List[Block]) -> bool:
+        # 检查 block 是否在 parent_range 中
+        if block not in self.parent_range:
+            return False
+        
+        # 根据位置类型匹配
+        if isinstance(self.position, str):
+            if self.position == "first":
+                return block == self.parent_range[0]
+            elif self.position == "last":
+                return block == self.parent_range[-1]
+            elif self.position == "middle":
+                # 中间元素（不包括首尾）
+                if len(self.parent_range) <= 2:
+                    return False
+                return block in self.parent_range[1:-1]
+            else:
+                return False
+        
+        # 数字索引（相对于 parent_range）
+        elif isinstance(self.position, int):
+            if self.position < 0:
+                target_idx = len(self.parent_range) + self.position
+            else:
+                target_idx = self.position
+            
+            if 0 <= target_idx < len(self.parent_range):
+                return block == self.parent_range[target_idx]
+        
+        return False
+
+
 class Classifier:
     """文档元素分类器
     
@@ -277,10 +340,108 @@ class Classifier:
         # 构建匹配器列表
         matchers = self._build_matchers(match_config)
 
-        # 遍历所有元素，检查是否匹配
+        # 查找匹配的块
+        matched_blocks = []
         for block in blocks:
             if all(matcher.match(block, blocks) for matcher in matchers):
                 block.add_class(class_name)
+                matched_blocks.append(block)
+        
+        # 如果有 children 配置，处理子元素
+        if "children" in rule and matched_blocks:
+            self._apply_children_rules(
+                rule["children"],
+                matched_blocks,
+                blocks
+            )
+
+    def _apply_children_rules(
+        self,
+        children_rules: List[Dict[str, Any]],
+        parent_blocks: List[Block],
+        all_blocks: List[Block]
+    ) -> None:
+        """应用子元素规则
+        
+        Args:
+            children_rules: 子元素规则列表
+            parent_blocks: 父区域匹配到的块列表
+            all_blocks: 所有块列表
+        """
+        # 对每个父区域，应用子规则
+        for parent_block in parent_blocks:
+            # 确定父区域的范围
+            # 如果父区域只有一个块，范围就是这个块
+            # 如果有多个块，需要根据实际情况确定范围
+            
+            # 这里简化处理：假设父区域是连续的块
+            # 找到父区域的起始和结束索引
+            parent_indices = [b.index for b in parent_blocks]
+            start_idx = min(parent_indices)
+            end_idx = max(parent_indices)
+            
+            # 获取父区域范围内的所有块
+            parent_range = [b for b in all_blocks if start_idx <= b.index <= end_idx]
+            
+            # 应用每条子规则
+            for child_rule in children_rules:
+                self._apply_child_rule(child_rule, parent_range, all_blocks)
+    
+    def _apply_child_rule(
+        self,
+        rule: Dict[str, Any],
+        parent_range: List[Block],
+        all_blocks: List[Block]
+    ) -> None:
+        """应用单条子元素规则
+        
+        Args:
+            rule: 子元素规则
+            parent_range: 父区域范围内的块
+            all_blocks: 所有块列表
+        """
+        class_name = rule["class"]
+        match_config = rule["match"]
+        
+        # 构建匹配器（相对于父区域）
+        matchers = self._build_matchers_for_children(match_config, parent_range)
+        
+        # 在父区域范围内查找匹配的块
+        for block in parent_range:
+            if all(matcher.match(block, all_blocks) for matcher in matchers):
+                block.add_class(class_name)
+    
+    def _build_matchers_for_children(
+        self,
+        config: Dict[str, Any],
+        parent_range: List[Block]
+    ) -> List[Matcher]:
+        """为子元素构建匹配器列表
+        
+        Args:
+            config: 匹配配置
+            parent_range: 父区域范围内的块
+            
+        Returns:
+            匹配器列表
+        """
+        matchers = []
+        
+        # 类型匹配
+        if "type" in config:
+            matchers.append(TypeMatcher(config["type"]))
+        
+        # 相对位置匹配（相对于父区域）
+        if "position" in config:
+            position = config["position"]
+            # 使用相对位置匹配器
+            matchers.append(RelativePositionInRangeMatcher(position, parent_range))
+        
+        # 内容模式匹配
+        if "pattern" in config:
+            matchers.append(PatternMatcher(config["pattern"]))
+        
+        return matchers
 
     def _build_matchers(self, config: Dict[str, Any]) -> List[Matcher]:
         """根据配置构建匹配器列表

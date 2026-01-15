@@ -19,12 +19,32 @@ document:
         type: paragraph
         position: 0
 
-    # 2. 作者列表（第二段，包含逗号或顿号）
-    - class: author-list
+    # 2. 作者区域（复合区域：标题和摘要之间）
+    - class: author-section
       match:
         type: paragraph
-        position: 1
-        pattern: ".*[,，、].*"
+        range:
+          after: { class: title }
+          before: { pattern: "^摘要：" }
+      # 作者区域内的子元素（使用相对定位）
+      children:
+        # 第一个元素：作者列表（包含逗号或顿号）
+        - class: author-list
+          match:
+            position: first
+            pattern: ".*[,，、].*"
+
+        # 中间元素：作者单位（以数字开头）
+        - class: author-affiliation
+          match:
+            position: middle
+            pattern: "^\\d+\\."
+
+        # 最后一个元素：通信作者（以*开头）
+        - class: corresponding-author
+          match:
+            position: last
+            pattern: "^\\*"
 
     # 3. 中文摘要标题（以"摘要："开头，中文冒号）
     - class: abstract-title
@@ -74,19 +94,6 @@ document:
         type: paragraph
         pattern: "^参考文献：?"
 
-    # 11. 作者单位（在作者列表和摘要之间）
-    - class: author-affiliation
-      match:
-        type: paragraph
-        range:
-          after: { class: author-list }
-          before: { class: abstract-title }
-
-    # 12. 通用段落（所有段落都是段落）
-    - class: paragraph
-      match:
-        type: paragraph
-
   # 样式定义
   styles:
     # 论文标题
@@ -102,6 +109,12 @@ document:
         space_after: 0.5行
         first_line_indent: 0字符
 
+    # 作者区域（整体样式，可选）
+    .author-section:
+      paragraph:
+        alignment: 居中
+        first_line_indent: 0字符
+
     # 作者列表
     .author-list:
       font:
@@ -114,6 +127,14 @@ document:
 
     # 作者单位
     .author-affiliation:
+      font:
+        size: 五号
+      paragraph:
+        alignment: 居中
+        first_line_indent: 0字符
+    
+    # 通信作者
+    .corresponding-author:
       font:
         size: 五号
       paragraph:

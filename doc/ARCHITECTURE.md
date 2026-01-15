@@ -243,18 +243,49 @@ class TableBlock(Block):
     pattern: "^\\d+\\."  # 范围内，且以数字开头
 ```
 
-### 5. 组合匹配
+### 5. 复合区域匹配 (children) ⭐
+
+对于复杂的文档结构，使用 **复合区域** + **相对定位**：
 
 ```yaml
-- class: corresponding-author
+# 父区域：作者信息区域
+- class: author-section
   match:
     type: paragraph
     range:
-      after: {class: author-list}
-      before: {class: abstract}
-    pattern: "^\\*"  # 范围内，且以 * 开头
-    position: last  # 范围内的最后一个
+      after: {class: title}
+      before: {pattern: "^摘要："}
+  
+  # 子元素：使用相对定位
+  children:
+    # 第一个：作者列表
+    - class: author-list
+      match:
+        position: first
+        pattern: ".*[,，].*"
+    
+    # 中间：作者单位（可变数量）
+    - class: author-affiliation
+      match:
+        position: middle
+        pattern: "^\\d+\\."
+    
+    # 最后：通信作者
+    - class: corresponding-author
+      match:
+        position: last
+        pattern: "^\\*"
 ```
+
+**相对位置关键字：**
+- `first` - 父区域的第一个元素
+- `last` - 父区域的最后一个元素
+- `middle` - 父区域的中间元素（不包括首尾）
+
+**优势：**
+- ✅ 适应可变数量的元素
+- ✅ 语义清晰，体现层次结构
+- ✅ 类似 HTML 的 DOM 树结构
 
 ## 样式定义详解
 

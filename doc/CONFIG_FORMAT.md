@@ -165,6 +165,50 @@ before: {pattern: "^摘要[:：]"}
     pattern: "^\\*"  # 必须以 * 开头
 ```
 
+#### 6. 复合区域匹配 (children) ⭐
+
+对于复杂的文档结构，可以定义**复合区域**，在父区域内使用**相对定位**匹配子元素。
+
+```yaml
+# 作者区域（复合区域）
+- class: author-section
+  match:
+    type: paragraph
+    range:
+      after: {class: title}
+      before: {pattern: "^摘要："}
+  # 子元素规则（相对于父区域）
+  children:
+    # 第一个子元素
+    - class: author-list
+      match:
+        position: first  # 相对位置
+        pattern: ".*[,，].*"
+    
+    # 中间的子元素
+    - class: author-affiliation
+      match:
+        position: middle  # 范围内的中间元素
+        pattern: "^\\d+\\."
+    
+    # 最后一个子元素
+    - class: corresponding-author
+      match:
+        position: last  # 相对位置
+        pattern: "^\\*"
+```
+
+**相对位置关键字：**
+- `first` - 父区域的第一个元素
+- `last` - 父区域的最后一个元素
+- `middle` - 父区域的中间元素（不包括首尾）
+- 数字索引 - 相对于父区域的索引（如 `0`, `1`, `-1`）
+
+**优势：**
+- ✅ 灵活适应可变数量的元素（如多个作者单位）
+- ✅ 语义清晰，表达文档的层次结构
+- ✅ 相对定位，不依赖绝对位置
+
 ### 多 class 支持 ⭐
 
 **重要特性**：一个元素可以匹配多个规则，拥有多个 class（类似 HTML）。
@@ -483,17 +527,32 @@ classifiers:
 
 ### Q: 如何匹配可变数量的元素？
 
-A: 使用范围匹配（range）：
+A: 使用**复合区域（children）**配合相对定位：
 
 ```yaml
-# 匹配标题和摘要之间的所有作者单位（数量可变）
-- class: author-affiliation
+# 定义作者区域（复合区域）
+- class: author-section
   match:
     range:
-      after: {class: author-list}
+      after: {class: title}
       before: {class: abstract}
-    pattern: "^\\d+\\."
+  # 子元素使用相对定位
+  children:
+    - class: author-list
+      match:
+        position: first  # 第一个
+    
+    - class: author-affiliation
+      match:
+        position: middle  # 中间所有元素
+        pattern: "^\\d+\\."
+    
+    - class: corresponding-author
+      match:
+        position: last  # 最后一个
 ```
+
+这样无论有多少个作者单位，都能正确识别。
 
 ### Q: 如何跳过某些元素不检查？
 
