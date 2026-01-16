@@ -167,7 +167,7 @@ document:
 
 ## 支持的定位方式
 
-### 1. 绝对定位
+### 1. 绝对定位 (Absolute)
 
 相对于整个文档的位置：
 
@@ -200,13 +200,33 @@ position:
   index: -1     # 父区域的最后一个
 ```
 
-### 4. 模式匹配
+### 4. 紧跟定位 (After)
+
+紧跟在指定元素之后：
+
+```yaml
+position:
+  type: after
+  class: keywords-en  # 紧跟在 keywords-en 之后
+```
+
+### 5. 之前定位 (Before)
+
+位于指定元素之前：
+
+```yaml
+position:
+  type: before
+  class: references   # 位于 references 之前
+```
+
+### 6. 模式匹配
 
 基于内容的正则表达式匹配：
 
 ```yaml
-pattern: "^摘要："           # 以"摘要："开头
-pattern: "^\\d+\\s+\\S+"    # 一级标题格式
+pattern: "^摘要：.*$"        # 以"摘要："开头（完全匹配）
+pattern: "^\\d+\\s+.+$"     # 一级标题格式（完全匹配）
 ```
 
 详见 [doc/POSITION_SYNTAX.md](doc/POSITION_SYNTAX.md)
