@@ -337,9 +337,9 @@ class ConfigLoader:
             pos_type = position["type"]
             
             # 验证 type 字段
-            if pos_type not in ["absolute", "relative", "after", "before"]:
+            if pos_type not in ["absolute", "relative", "next", "prev"]:
                 raise ConfigError(
-                    f"{context}: position.type 必须是 'absolute', 'relative', 'after' 或 'before'，"
+                    f"{context}: position.type 必须是 'absolute', 'relative', 'next' 或 'prev'，"
                     f"当前值为 '{pos_type}'"
                 )
             
@@ -347,7 +347,7 @@ class ConfigLoader:
             if pos_type in ["absolute", "relative"]:
                 if "index" not in position:
                     raise ConfigError(f"{context}: position 对象（type={pos_type}）必须包含 'index' 字段")
-            elif pos_type in ["after", "before"]:
+            elif pos_type in ["next", "prev"]:
                 if "class" not in position:
                     raise ConfigError(f"{context}: position 对象（type={pos_type}）必须包含 'class' 字段")
             

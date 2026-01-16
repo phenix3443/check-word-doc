@@ -62,7 +62,7 @@ document:
       match:
         type: paragraph
         position:
-          type: after
+          type: next
           class: keywords
 
     # 6. 英文作者信息（复合结构，位于英文标题和英文摘要之间）
@@ -116,7 +116,7 @@ document:
         type: paragraph
         pattern: "^(引\\s+言|概\\s+述)$"
         position:
-          type: after
+          type: next
           class: keywords-en
 
     # 8. 数据采集和处理方法（一级标题，编号为1）
@@ -127,7 +127,7 @@ document:
         type: paragraph
         pattern: "^1\\s+数据采集和处理方法$"
         position:
-          type: after
+          type: next
           class: heading-introduction
 
     # 9. 数据样本描述（一级标题，编号为2）
@@ -138,7 +138,7 @@ document:
         type: paragraph
         pattern: "^2\\s+数据样本描述$"
         position:
-          type: after
+          type: next
           class: heading-data-collection
 
     # 10. 数据质量控制和评估（一级标题，编号为3）
@@ -149,7 +149,7 @@ document:
         type: paragraph
         pattern: "^3\\s+数据质量控制和评估$"
         position:
-          type: after
+          type: next
           class: heading-data-description
 
     # 11. 数据价值和保藏计划（一级标题，编号为4）
@@ -160,7 +160,7 @@ document:
         type: paragraph
         pattern: "^4\\s+数据价值和保藏计划$"
         position:
-          type: after
+          type: next
           class: heading-quality-control
 
     # 12. 数据使用方法和建议（一级标题，编号为5）
@@ -171,7 +171,7 @@ document:
         type: paragraph
         pattern: "^5\\s+数据使用方法和建议$"
         position:
-          type: after
+          type: next
           class: heading-data-value
 
     # 13. 数据可用性声明（一级标题，编号为6）
@@ -182,7 +182,7 @@ document:
         type: paragraph
         pattern: "^6\\s+数据可用性声明$"
         position:
-          type: after
+          type: next
           class: heading-usage-method
 
     # 14. 致谢标题（特殊的一级标题，内容为"致  谢"）
@@ -193,7 +193,7 @@ document:
         type: paragraph
         pattern: "^致\\s+谢$"
         position:
-          type: after
+          type: next
           class: heading-availability
 
     # 15. 数据作者分工职责标题（特殊的一级标题，无编号）
@@ -204,7 +204,7 @@ document:
         type: paragraph
         pattern: "^数据作者分工职责$"
         position:
-          type: after
+          type: next
           class: heading-acknowledgments
 
     # 16. 参考文献标题（特殊的一级标题，固定内容为"参考文献"）
@@ -215,5 +215,5 @@ document:
         type: paragraph
         pattern: "^参考文献$"
         position:
-          type: after
+          type: next
           class: heading-author-contributions

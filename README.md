@@ -206,7 +206,7 @@ position:
 
 ```yaml
 position:
-  type: after
+  type: next
   class: keywords-en  # 紧跟在 keywords-en 之后
 ```
 
@@ -216,7 +216,7 @@ position:
 
 ```yaml
 position:
-  type: before
+  type: prev
   class: references   # 位于 references 之前
 ```
 

@@ -5,8 +5,8 @@
 `position` 字段用于定位文档元素，支持四种定位类型：
 1. **绝对定位** (`absolute`)：相对于整个文档的绝对位置
 2. **相对定位** (`relative`)：相对于其他元素或父区域的相对位置
-3. **紧跟定位** (`after`)：紧跟在指定元素之后
-4. **之前定位** (`before`)：位于指定元素之前
+3. **下一个元素** (`next`)：紧跟在指定元素之后的下一个同级元素
+4. **上一个元素** (`prev`)：位于指定元素之前的上一个同级元素
 
 ## 1. 绝对定位 (Absolute)
 
@@ -143,15 +143,15 @@ position:
         pattern: "^\\*"
 ```
 
-## 3. 紧跟定位 (After)
+## 3. 下一个元素 (Next)
 
-紧跟在指定元素之后。
+紧跟在指定元素之后的下一个同级元素。
 
 ### 语法
 
 ```yaml
 position:
-  type: after
+  type: next
   class: <元素类名>
   offset: <偏移量>  # 可选，默认为 0
 ```
@@ -161,7 +161,7 @@ position:
 | 参数 | 说明 | 必需 | 默认值 |
 |------|------|------|--------|
 | `class` | 锚点元素的类名 | 是 | - |
-| `offset` | 偏移量（0 表示紧跟） | 否 | 0 |
+| `offset` | 偏移量（0 表示紧跟的下一个） | 否 | 0 |
 
 ### 示例
 
@@ -171,7 +171,7 @@ position:
   match:
     type: paragraph
     position:
-      type: after
+      type: next
       class: keywords
 
 # 引言：紧跟在英文关键词之后
@@ -180,7 +180,7 @@ position:
     type: paragraph
     pattern: "^(引\\s+言|概\\s+述)$"
     position:
-      type: after
+      type: next
       class: keywords-en
 
 # 数据采集和处理方法：紧跟在引言之后
@@ -189,7 +189,7 @@ position:
     type: paragraph
     pattern: "^1\\s+数据采集和处理方法$"
     position:
-      type: after
+      type: next
       class: heading-introduction
 ```
 
@@ -199,22 +199,34 @@ position:
 - **一对一关系**：每个锚点后只有一个目标元素
 - **清晰的文档结构**：如标题的依赖链
 
-## 4. 之前定位 (Before)
+### 类比 CSS
 
-位于指定元素之前。
+类似 CSS 的相邻兄弟选择器 `+`：
+```css
+h1 + p {  /* 选择紧跟在 h1 后的 p 元素 */
+    color: red;
+}
+```
+
+## 4. 上一个元素 (Prev)
+
+位于指定元素之前的上一个同级元素。
 
 ### 语法
 
 ```yaml
 position:
-  type: before
+  type: prev
   class: <元素类名>
   offset: <偏移量>  # 可选，默认为 0
 ```
 
 ### 参数说明
 
-与 `after` 相同，但方向相反。
+| 参数 | 说明 | 必需 | 默认值 |
+|------|------|------|--------|
+| `class` | 锚点元素的类名 | 是 | - |
+| `offset` | 偏移量（0 表示紧邻的上一个） | 否 | 0 |
 
 ### 示例
 
@@ -224,7 +236,7 @@ position:
   match:
     type: paragraph
     position:
-      type: before
+      type: prev
       class: references
 ```
 
@@ -271,21 +283,21 @@ document:
         type: paragraph
         pattern: "^摘要："
     
-    # 5. 紧跟定位：英文标题紧跟在关键词之后
+    # 5. 下一个元素：英文标题紧跟在关键词之后
     - class: title-en
       match:
         type: paragraph
         position:
-          type: after
+          type: next
           class: keywords
     
-    # 6. 紧跟定位：引言紧跟在英文关键词之后
+    # 6. 下一个元素：引言紧跟在英文关键词之后
     - class: heading-introduction
       match:
         type: paragraph
         pattern: "^(引\\s+言|概\\s+述)$"
         position:
-          type: after
+          type: next
           class: keywords-en
 ```
 
@@ -296,8 +308,8 @@ document:
 | 文档第一个/最后一个元素 | `absolute` | 标题（第0个段落） |
 | 两个元素之间的区域 | `relative` (区间) | 作者区域（标题和摘要之间） |
 | 父区域内的子元素 | `relative` (索引) | 作者列表（父区域第一个） |
-| 元素按固定顺序出现 | `after` | 一级标题依赖链 |
-| 元素在某元素之前 | `before` | 某元素在参考文献之前 |
+| 元素按固定顺序出现 | `next` | 一级标题依赖链 |
+| 元素在某元素之前 | `prev` | 某元素在参考文献之前 |
 | 内容特征明显 | 无需 `position` | 摘要（以"摘要："开头） |
 
 ## 设计原则
@@ -317,7 +329,7 @@ document:
 5. **数字索引**：只支持数字形式（`0`, `-1`），不支持字符串形式（`"first"`, `"last"`）
 6. **类型验证**：
    - `type: absolute/relative` 必须有 `index` 字段
-   - `type: after/before` 必须有 `class` 字段
+   - `type: next/prev` 必须有 `class` 字段
 
 ## 语法演进
 
@@ -338,12 +350,19 @@ before:
 ```yaml
 # 新的统一 position 语法
 position:
-  type: after
+  type: next     # 下一个元素（原 after）
   class: keywords
 
 position:
-  type: before
+  type: prev     # 上一个元素（原 before）
   class: references
 ```
 
-**迁移说明**：所有 `after: {class: xxx}` 应迁移为 `position: {type: after, class: xxx}`
+**迁移说明**：
+- 旧语法 `after: {class: xxx}` → 新语法 `position: {type: next, class: xxx}`
+- 旧语法 `before: {class: xxx}` → 新语法 `position: {type: prev, class: xxx}`
+
+**命名变更说明**：
+- `after` → `next`：更明确表示"下一个同级元素"
+- `before` → `prev`：更明确表示"上一个同级元素"
+- 类似编程中的 `next`/`previous` 概念，语义更清晰

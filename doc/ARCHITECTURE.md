@@ -121,8 +121,8 @@ styles:
        ├── position 定位（通过 position 字段）
        │   ├── absolute: 绝对位置（index: 0, -1）
        │   ├── relative: 区间定位（index: (a, b)）
-       │   ├── after: 紧跟定位（class: xxx）
-       │   └── before: 之前定位（class: xxx）
+       │   ├── next: 下一个元素（class: xxx）
+       │   └── prev: 上一个元素（class: xxx）
        ├── pattern: 内容模式匹配
        └── class 引用（引用其他已识别的元素）
 
@@ -160,7 +160,7 @@ Classifier 会自动分析依赖并按正确顺序处理：
 
 2. **依赖提取**
    - 提取每条规则的依赖（通过 `_extract_dependencies`）
-   - 分析 `position` 中的 `class` 引用（`type: after/before/relative`）
+   - 分析 `position` 中的 `class` 引用（`type: next/before/relative`）
 
 3. **递归处理**
    - 递归处理依赖规则（通过 `_process_rule_with_dependencies`）
@@ -187,13 +187,13 @@ Classifier 会自动分析依赖并按正确顺序处理：
 - class: section-a
   match:
     position:
-      type: after
+      type: next
       class: section-b
 
 - class: section-b
   match:
     position:
-      type: after
+      type: next
       class: section-a
 ```
 
@@ -216,8 +216,8 @@ class Classifier:
         # 支持多种匹配方式
         # - position: {type: absolute} - 绝对位置
         # - position: {type: relative} - 相对位置/区间
-        # - position: {type: after} - 紧跟定位
-        # - position: {type: before} - 之前定位
+        # - position: {type: next} - 紧跟定位
+        # - position: {type: prev} - 之前定位
         # - pattern: 内容模式
         pass
 ```
@@ -306,7 +306,7 @@ class TableBlock(Block):
   match:
     type: paragraph
     position:
-      type: after
+      type: next
       class: keywords  # 紧跟在 keywords 之后
 ```
 
@@ -477,7 +477,7 @@ poetry run docx-lint document.docx --config config.yaml --verbose
 #   - Rule 'title' (position: {type: absolute, index: 0}): ✓ MATCH
 #   - Added class: title
 # [Classifier] Checking block 1
-#   - Rule 'title-en' (position: {type: after, class: keywords}): ✓ MATCH
+#   - Rule 'title-en' (position: {type: next, class: keywords}): ✓ MATCH
 #   - Added class: title-en
 ```
 

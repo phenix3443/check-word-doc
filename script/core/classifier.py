@@ -394,8 +394,8 @@ class Classifier:
                             anchor1, anchor2 = match.groups()
                             dependencies.extend([anchor1, anchor2])
                 
-                # 新语法：position: {type: after/before, class: xxx}
-                elif pos_type in ["after", "before"]:
+                # 新语法：position: {type: next/prev, class: xxx}
+                elif pos_type in ["next", "prev"]:
                     if "class" in position_config:
                         dependencies.append(position_config["class"])
 
@@ -696,14 +696,14 @@ class Classifier:
                         # 这个会在 _build_matchers_for_children 中处理
                         pass
                 
-                elif pos_type == "after":
-                    # 紧跟定位：position: {type: after, class: xxx}
+                elif pos_type == "next":
+                    # 下一个元素：position: {type: next, class: xxx}
                     offset = position_config.get("offset", 0)
                     anchor = {"class": position_config["class"]}
                     matchers.append(RelativeMatcher(anchor, "after", offset))
                 
-                elif pos_type == "before":
-                    # 之前定位：position: {type: before, class: xxx}
+                elif pos_type == "prev":
+                    # 上一个元素：position: {type: prev, class: xxx}
                     offset = position_config.get("offset", 0)
                     anchor = {"class": position_config["class"]}
                     matchers.append(RelativeMatcher(anchor, "before", offset))
