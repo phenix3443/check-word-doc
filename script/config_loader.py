@@ -329,25 +329,31 @@ class ConfigLoader:
         Raises:
             ConfigError: 如果格式不正确
         """
-        # 新语法：position 是一个对象 { type, index }
+        # 新语法：position 是一个对象 { type, index/class }
         if isinstance(position, dict):
             if "type" not in position:
                 raise ConfigError(f"{context}: position 对象必须包含 'type' 字段")
             
-            if "index" not in position:
-                raise ConfigError(f"{context}: position 对象必须包含 'index' 字段")
-            
             pos_type = position["type"]
             
-            # 验证 type 字段只能是 absolute 或 relative
-            if pos_type not in ["absolute", "relative"]:
+            # 验证 type 字段
+            if pos_type not in ["absolute", "relative", "after", "before"]:
                 raise ConfigError(
-                    f"{context}: position.type 必须是 'absolute' 或 'relative'，"
+                    f"{context}: position.type 必须是 'absolute', 'relative', 'after' 或 'before'，"
                     f"当前值为 '{pos_type}'"
                 )
             
-            # 验证 index 字段
-            pos_index = position["index"]
+            # 根据 type 验证必需字段
+            if pos_type in ["absolute", "relative"]:
+                if "index" not in position:
+                    raise ConfigError(f"{context}: position 对象（type={pos_type}）必须包含 'index' 字段")
+            elif pos_type in ["after", "before"]:
+                if "class" not in position:
+                    raise ConfigError(f"{context}: position 对象（type={pos_type}）必须包含 'class' 字段")
+            
+            # 验证 index 或 class 字段（根据 type）
+            if pos_type in ["absolute", "relative"]:
+                pos_index = position["index"]
             
             if pos_type == "absolute":
                 # 绝对定位：index 应该是数字或 first/last

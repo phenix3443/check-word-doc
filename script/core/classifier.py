@@ -378,7 +378,9 @@ class Classifier:
             
             # position 是一个对象 { type, index }
             if isinstance(position_config, dict) and "type" in position_config:
-                if position_config["type"] == "relative":
+                pos_type = position_config["type"]
+                
+                if pos_type == "relative":
                     pos_index = position_config["index"]
                     
                     # 如果是区间表达式，提取其中的 class 引用
@@ -391,6 +393,11 @@ class Classifier:
                         if match:
                             anchor1, anchor2 = match.groups()
                             dependencies.extend([anchor1, anchor2])
+                
+                # 新语法：position: {type: after/before, class: xxx}
+                elif pos_type in ["after", "before"]:
+                    if "class" in position_config:
+                        dependencies.append(position_config["class"])
 
         # 旧语法：after/before 中的 class 引用（向后兼容）
         if "after" in match_config and isinstance(match_config["after"], dict):
@@ -668,17 +675,18 @@ class Classifier:
         if "position" in config:
             position_config = config["position"]
             
-            # 新语法：position 是一个对象 { type, index }
+            # 新语法：position 是一个对象 { type, index/class }
             if isinstance(position_config, dict) and "type" in position_config:
                 pos_type = position_config["type"]
-                pos_index = position_config["index"]
                 
                 if pos_type == "absolute":
                     # 绝对定位：相对于整个文档
+                    pos_index = position_config["index"]
                     matchers.append(PositionMatcher(pos_index))
                 
                 elif pos_type == "relative":
                     # 相对定位：可能是区间表达式或简单位置
+                    pos_index = position_config["index"]
                     if isinstance(pos_index, str) and any(c in pos_index for c in '()[]'):
                         # 区间表达式：(a, b) 或 [a, b] 等
                         range_matchers = self._parse_range_expression(pos_index)
@@ -687,6 +695,18 @@ class Classifier:
                         # 简单位置：first, last, middle, 0, 1, 2...
                         # 这个会在 _build_matchers_for_children 中处理
                         pass
+                
+                elif pos_type == "after":
+                    # 紧跟定位：position: {type: after, class: xxx}
+                    offset = position_config.get("offset", 0)
+                    anchor = {"class": position_config["class"]}
+                    matchers.append(RelativeMatcher(anchor, "after", offset))
+                
+                elif pos_type == "before":
+                    # 之前定位：position: {type: before, class: xxx}
+                    offset = position_config.get("offset", 0)
+                    anchor = {"class": position_config["class"]}
+                    matchers.append(RelativeMatcher(anchor, "before", offset))
             
             # 旧语法：position 是一个简单值（向后兼容）
             else:
