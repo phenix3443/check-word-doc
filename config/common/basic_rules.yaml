@@ -1,0 +1,63 @@
+# 基本规则配置
+# 这些规则适用于所有文档类型，定义了基本的文本格式要求
+
+document:
+  rules:
+    # ========== 中文格式规则 ==========
+
+    # r-basic-001: 中文不能被英文引号包围
+    - id: r-basic-001
+      name: 中文不能被英文引号包围
+      description: 中文文本不应该被英文单引号或双引号包围，应使用中文引号
+      selector: "paragraph"
+      check:
+        pattern: "^(?!.*['\"][\\u4e00-\\u9fa5]+['\"]).*$"
+      severity: error
+      message: 中文不能被英文引号包围，应使用中文引号
+
+    # r-basic-002: 中文之间不能有空格
+    - id: r-basic-002
+      name: 中文之间不能有空格
+      description: 中文字符之间不应该有空格
+      selector: "paragraph"
+      check:
+        pattern: "^(?!.*[\\u4e00-\\u9fa5]\\s+[\\u4e00-\\u9fa5]).*$"
+      severity: error
+      message: 中文字符之间不应该有空格
+
+    # ========== 标点符号规则 ==========
+
+    # r-basic-011: 中文标点后不应有多余空格
+    - id: r-basic-011
+      name: 中文标点后不应有多余空格
+      description: 中文标点符号后面不应该有空格
+      selector: "paragraph"
+      check:
+        pattern: "^(?!.*[，。；：！？]\\s+[\\u4e00-\\u9fa5]).*$"
+      severity: warning
+      message: 中文标点符号后不应该有空格
+
+    # r-basic-012: 中文标点前不应有空格
+    - id: r-basic-012
+      name: 中文标点前不应有空格
+      description: 中文标点符号前面不应该有空格
+      selector: "paragraph"
+      check:
+        pattern: "^(?!.*[\\u4e00-\\u9fa5]\\s+[，。；：！？]).*$"
+      severity: warning
+      message: 中文标点符号前不应该有空格
+
+    # r-basic-013: 数字和中文单位之间不应有空格
+    - id: r-basic-013
+      name: 数字和中文单位之间不应有空格
+      description: 数字和中文单位之间不应该有空格
+      selector: "paragraph"
+      check:
+        pattern: "^(?!.*\\d+\\s+[个条项次篇章节页行列]).*$"
+      severity: warning
+      message: 数字和中文单位之间不应该有空格
+
+# 注意：
+# 1. 引号匹配规则由于涉及复杂的嵌套和特殊字符，建议在代码中实现
+# 2. 括号匹配规则同样建议在代码中实现
+# 3. 本配置文件只包含可以用简单正则表达式实现的基本规则
