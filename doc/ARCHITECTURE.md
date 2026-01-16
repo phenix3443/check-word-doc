@@ -118,11 +118,12 @@ styles:
    ├── 根据 classifiers 规则匹配元素
    ├── 给匹配的元素添加 class 属性
    └── 支持多种匹配方式：
-       ├── 绝对定位（position: {type: absolute}）
-       ├── 相对定位/区间（position: {type: relative}）
-       ├── 紧跟定位（position: {type: after}）
-       ├── 之前定位（position: {type: before}）
-       ├── 内容模式（pattern）
+       ├── position 定位（通过 position 字段）
+       │   ├── absolute: 绝对位置（index: 0, -1）
+       │   ├── relative: 区间定位（index: (a, b)）
+       │   ├── after: 紧跟定位（class: xxx）
+       │   └── before: 之前定位（class: xxx）
+       ├── pattern: 内容模式匹配
        └── class 引用（引用其他已识别的元素）
 
 4. 样式检查（StyleChecker）
