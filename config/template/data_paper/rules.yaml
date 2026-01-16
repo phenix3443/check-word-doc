@@ -1,195 +1,287 @@
-# 数据论文 - 内容规则检查
+# 数据论文 - 内容规则检查（使用 Selector 语法）
 
 document:
   rules:
-    # r-001: 作者单位编号规则
+    # ========== 作者信息规则 ==========
+    
+    # r-001: 作者列表分隔符规则
     - id: r-001
-      name: 作者单位编号规则
-      description: 多个作者时，作者单位必须以数字编号开头
-      applies_to: author-affiliation # 应用到哪个 class
-      condition:
-        # 条件：author-list 中包含多个作者（有逗号或顿号）
-        class: author-list
-        pattern: ".*[,，、].*"
-      check:
-        # 检查：author-affiliation 必须以数字开头
-        pattern: "^\\d+\\."
-      severity: error
-      message: "多个作者时，作者单位必须以数字编号开头（如：1. 单位名称）"
-
-    # r-002: 作者列表分隔符规则（多作者）
-    - id: r-002
-      name: 作者列表分隔符规则（多作者）
+      name: 作者列表分隔符规则
       description: 多个作者时，作者之间必须使用中文逗号（，）分隔
-      applies_to: author-list
-      condition:
-        # 条件：包含多个作者名（通过检测是否有数字后跟逗号来判断）
-        class: author-list
-        pattern: "\\d+[*]?，"
+      selector: ".author-list"
       check:
-        # 检查：必须使用中文逗号，不能使用英文逗号或其他分隔符
-        # 格式：作者名+数字[+星号]，作者名+数字[+星号]
-        # 排除：英文逗号(,)、分号(;)、中文分号(；)、顿号(、)
         pattern: "^[^,;；、]+\\d+[*]?(，[^,;；、]+\\d+[*]?)*$"
       severity: error
       message: "多个作者之间必须使用中文逗号（，）分隔，不能使用英文逗号或其他分隔符"
-
-    # r-003: 作者编号规则
-    - id: r-003
+    
+    # r-002: 作者编号规则
+    - id: r-002
       name: 作者编号规则
       description: 每个作者后面必须有数字编号（表示单位）
-      applies_to: author-list
+      selector: ".author-list"
       check:
-        # 检查：每个作者名后都有数字
-        # 注意：这个规则检查是否所有作者都有编号
-        # 格式示例：王嘉平1*，汪浩2
         pattern: "\\d+"
       severity: error
       message: "每个作者后面必须有数字编号（表示作者单位）"
-
-    # r-004: 通讯作者标记规则（作者列表中）
-    - id: r-004
-      name: 通讯作者标记规则（作者列表中）
-      description: 通讯作者的编号后必须有星号（星号表示通讯作者，不是第一作者）
-      applies_to: author-list
+    
+    # r-003: 通讯作者标记规则
+    - id: r-003
+      name: 通讯作者标记规则
+      description: 通讯作者的编号后必须有星号
+      selector: ".author-list"
       check:
-        # 检查：包含 数字+星号 的模式
-        # 注意：星号标记的是通讯作者，通讯作者可能是第一作者，也可能不是
-        # 例如：王嘉平1*，汪浩2（王嘉平既是第一作者也是通讯作者）
         pattern: "\\d+\\*"
       severity: error
-      message: "通讯作者的编号后必须有星号（如：王嘉平1*），星号表示该作者为通讯作者"
-
-    # r-005: 通信作者标记规则
-    - id: r-005
-      name: 通信作者标记规则
+      message: "通讯作者的编号后必须有星号（如：王嘉平1*）"
+    
+    # r-004: 通信作者信息标记
+    - id: r-004
+      name: 通信作者信息标记
       description: 通信作者信息必须以星号开头
-      applies_to: corresponding-author
+      selector: ".corresponding-author"
       check:
         pattern: "^\\*"
       severity: error
       message: "通信作者信息必须以星号开头"
-
-    # r-006: 作者单位格式规则（多作者）
+    
+    # r-005: 第一个作者单位编号
+    - id: r-005
+      name: 第一个作者单位编号
+      description: 第一个作者单位必须以 '1.' 开头
+      selector: ".author-affiliation:first"
+      check:
+        pattern: "^1\\."
+      severity: error
+      message: "第一个作者单位必须以 '1.' 开头"
+    
+    # r-006: 第二个作者单位编号（如果存在）
     - id: r-006
-      name: 作者单位格式规则（多作者）
-      description: 多个作者时，单位格式必须为"编号. 单位/机构，城市  邮编"
-      applies_to: author-affiliation
+      name: 第二个作者单位编号
+      description: 第二个作者单位必须以 '2.' 开头
+      selector: ".author-affiliation:nth(1)"
       condition:
-        # 条件：有多个作者（需要编号）
-        class: author-list
+        selector: ".author-affiliation"
+        count: ">= 2"
+      check:
+        pattern: "^2\\."
+      severity: error
+      message: "第二个作者单位必须以 '2.' 开头"
+    
+    # r-007: 作者单位格式（多作者）
+    - id: r-007
+      name: 作者单位格式（多作者）
+      description: 多个作者时，单位格式必须为"编号. 单位/机构，城市  邮编"
+      selector: ".author-affiliation"
+      condition:
+        selector: ".author-list"
         pattern: ".*[,，、].*"
       check:
-        # 格式：编号. 单位名称，城市  邮编
-        # 注意：城市和邮编之间有两个空格
-        # 详细说明：
-        # - \d+ : 编号（1, 2, 3...）
-        # - \. : 点号
-        # - \s+ : 至少一个空格
-        # - .+ : 单位/机构名称（不能为空）
-        # - ， : 中文逗号
-        # - .+ : 城市名称（不能为空）
-        # - \s{2,} : 至少两个空格
-        # - \d{6} : 6位邮编
         pattern: "^\\d+\\.\\s+.+，.+\\s{2,}\\d{6}$"
       severity: error
       message: "作者单位格式错误，应为：编号. 单位/机构，城市  邮编（注意：城市和邮编之间有两个空格）"
-
-    # r-007: 作者单位格式规则（单作者）
-    - id: r-007
-      name: 作者单位格式规则（单作者）
+    
+    # r-008: 作者单位格式（单作者）
+    - id: r-008
+      name: 作者单位格式（单作者）
       description: 单个作者时，单位格式必须为"单位/机构，城市  邮编"（无编号）
-      applies_to: author-affiliation
+      selector: ".author-affiliation"
       condition:
-        # 条件：只有一个作者（不需要编号）
-        class: author-list
+        selector: ".author-list"
         pattern: "^[^,，、]+$"
       check:
-        # 格式：单位名称，城市  邮编（无编号）
-        # 注意：城市和邮编之间有两个空格
         pattern: "^[^\\d].+，.+\\s{2,}\\d{6}$"
       severity: error
       message: "作者单位格式错误，应为：单位/机构，城市  邮编（注意：城市和邮编之间有两个空格，无需编号）"
-
-    # ========== 英文部分规则 ==========
-
-    # r-008: 英文作者列表分隔符规则（多作者）
-    - id: r-008
-      name: 英文作者列表分隔符规则（多作者）
+    
+    # ========== 英文作者信息规则 ==========
+    
+    # r-009: 英文作者列表分隔符
+    - id: r-009
+      name: 英文作者列表分隔符规则
       description: 多个英文作者时，作者之间必须使用英文逗号+空格(, )分隔
-      applies_to: author-list-en
+      selector: ".author-list-en"
       condition:
-        # 条件：包含多个作者名
-        class: author-list-en
+        selector: ".author-list-en"
         pattern: ","
       check:
-        # 检查：必须使用英文逗号+空格
-        # 格式：Name1*, Name2
-        # 注意：英文作者名后也有数字（可选）和星号（通讯作者）
         pattern: "^[^,，；;]+,\\s+[^,，；;]+"
       severity: error
       message: "多个英文作者之间必须使用英文逗号+空格(, )分隔"
-
-    # r-009: 英文作者编号规则
-    - id: r-009
-      name: 英文作者编号规则
-      description: 每个英文作者后面可以有数字编号（表示单位）
-      applies_to: author-list-en
+    
+    # r-010: 英文作者名格式
+    - id: r-010
+      name: 英文作者名格式
+      description: 英文作者名必须包含大写字母
+      selector: ".author-list-en"
       check:
-        # 检查：英文作者名格式
-        # 格式示例：WANG Jiaping*, WANG Hao
-        # 注意：英文作者名通常不带数字，但通讯作者有星号
         pattern: "[A-Z]"
       severity: error
       message: "英文作者名必须包含大写字母"
-
-    # r-010: 英文作者单位编号规则
-    - id: r-010
-      name: 英文作者单位编号规则
+    
+    # r-011: 英文作者单位编号（多作者）
+    - id: r-011
+      name: 英文作者单位编号（多作者）
       description: 多个作者时，英文作者单位必须以数字编号开头
-      applies_to: author-affiliation-en
+      selector: ".author-affiliation-en"
       condition:
-        class: author-list-en
+        selector: ".author-list-en"
         pattern: ".*,.*"
       check:
         pattern: "^\\d+\\."
       severity: error
       message: "多个作者时，英文作者单位必须以数字编号开头（如：1. Affiliation）"
-
-    # r-011: 英文通讯作者邮箱格式
-    - id: r-011
+    
+    # r-012: 英文通讯作者邮箱格式
+    - id: r-012
       name: 英文通讯作者邮箱格式
       description: 英文通讯作者信息必须以"*Email:"开头
-      applies_to: corresponding-author-en
+      selector: ".corresponding-author-en"
       check:
         pattern: "^\\*Email:"
       severity: error
       message: "英文通讯作者信息必须以'*Email:'开头"
-
-    # r-012: 英文作者单位格式规则（多作者）
-    - id: r-012
-      name: 英文作者单位格式规则（多作者）
-      description: 多个作者时，英文单位格式必须为"编号. Affiliation, City Postal Code, Country"
-      applies_to: author-affiliation-en
-      condition:
-        class: author-list-en
-        pattern: ".*,.*"
+    
+    # ========== 参考文献规则 ==========
+    
+    # r-020: 第一条参考文献编号
+    - id: r-020
+      name: 第一条参考文献编号
+      description: 第一条参考文献必须以 '[1]' 开头
+      selector: ".reference-item:first"
       check:
-        # 格式：编号. 单位, 城市 邮编, 国家
-        # 注意：使用英文逗号和空格
-        pattern: "^\\d+\\.\\s+.+,\\s*.+\\s+\\d+,\\s*.+$"
+        pattern: "^\\[1\\]"
       severity: error
-      message: "英文作者单位格式错误，应为：编号. Affiliation, City Postal Code, Country"
-
-    # r-013: 英文作者单位格式规则（单作者）
-    - id: r-013
-      name: 英文作者单位格式规则（单作者）
-      description: 单个作者时，英文单位格式必须为"Affiliation, City Postal Code, Country"（无编号）
-      applies_to: author-affiliation-en
+      message: "第一条参考文献必须以 '[1]' 开头"
+    
+    # r-021: 第二条参考文献编号
+    - id: r-021
+      name: 第二条参考文献编号
+      description: 第二条参考文献必须以 '[2]' 开头
+      selector: ".reference-item:nth(1)"
       condition:
-        class: author-list-en
-        pattern: "^[^,]+$"
+        selector: ".reference-item"
+        count: ">= 2"
       check:
-        pattern: "^[^\\d].+,\\s*.+\\s+\\d+,\\s*.+$"
+        pattern: "^\\[2\\]"
       severity: error
-      message: "英文作者单位格式错误，应为：Affiliation, City Postal Code, Country（无需编号）"
+      message: "第二条参考文献必须以 '[2]' 开头"
+    
+    # r-022: 最后一条参考文献编号
+    - id: r-022
+      name: 最后一条参考文献编号
+      description: 最后一条参考文献编号应该与总数一致
+      selector: ".reference-item:last"
+      check:
+        pattern: "^\\[\\d+\\]"
+      severity: warning
+      message: "参考文献编号应该连续"
+    
+    # ========== 章节规则 ==========
+    
+    # r-030: 引言内容存在性
+    - id: r-030
+      name: 引言内容检查
+      description: 引言标题后必须有引言内容
+      selector: ".heading-introduction + .body-introduction"
+      check:
+        exists: true
+      severity: error
+      message: "引言标题后必须有引言内容"
+    
+    # r-031: 数据采集内容存在性
+    - id: r-031
+      name: 数据采集内容检查
+      description: 数据采集标题后必须有内容
+      selector: ".heading-data-collection + .body-data-collection"
+      check:
+        exists: true
+      severity: error
+      message: "数据采集和处理方法标题后必须有内容"
+    
+    # r-032: 数据样本描述内容存在性
+    - id: r-032
+      name: 数据样本描述内容检查
+      description: 数据样本描述标题后必须有内容
+      selector: ".heading-data-description + .body-data-description"
+      check:
+        exists: true
+      severity: error
+      message: "数据样本描述标题后必须有内容"
+    
+    # ========== 表格规则 ==========
+    
+    # r-040: 数据信息表题注格式
+    - id: r-040
+      name: 数据信息表题注格式
+      description: 数据信息表题注必须为"表 1： 数据库（集）基本信息简介"
+      selector: ".data-info-table-caption"
+      check:
+        pattern: "^表\\s*1[：:]\\s*数据库（集）基本信息简介$"
+      severity: error
+      message: "数据信息表题注格式错误，应为：表 1： 数据库（集）基本信息简介"
+    
+    # r-041: 数据信息表存在性
+    - id: r-041
+      name: 数据信息表存在性
+      description: 数据信息表题注后必须有表格
+      selector: ".data-info-table-caption + .data-info-table"
+      check:
+        exists: true
+      severity: error
+      message: "数据信息表题注后必须有表格"
+    
+    # ========== 必需元素检查 ==========
+    
+    # r-050: 论文标题存在性
+    - id: r-050
+      name: 论文标题存在性
+      selector: ".title"
+      check:
+        exists: true
+      severity: error
+      message: "文档必须包含论文标题"
+    
+    # r-051: 中文摘要存在性
+    - id: r-051
+      name: 中文摘要存在性
+      selector: ".abstract"
+      check:
+        exists: true
+      severity: error
+      message: "文档必须包含中文摘要"
+    
+    # r-052: 英文摘要存在性
+    - id: r-052
+      name: 英文摘要存在性
+      selector: ".abstract-en"
+      check:
+        exists: true
+      severity: error
+      message: "文档必须包含英文摘要"
+    
+    # r-053: 关键词存在性
+    - id: r-053
+      name: 关键词存在性
+      selector: ".keywords"
+      check:
+        exists: true
+      severity: error
+      message: "文档必须包含关键词"
+    
+    # r-054: 参考文献存在性
+    - id: r-054
+      name: 参考文献存在性
+      selector: ".heading-references"
+      check:
+        exists: true
+      severity: error
+      message: "文档必须包含参考文献"
+    
+    # r-055: 参考文献数量
+    - id: r-055
+      name: 参考文献数量
+      selector: ".reference-item"
+      check:
+        count: ">= 1"
+      severity: error
+      message: "文档必须至少包含1条参考文献"

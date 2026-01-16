@@ -8,21 +8,18 @@ document:
     # 注意：可能有多个空格，完全匹配整行
     - class: heading-1
       match:
-        type: paragraph
         pattern: "^\\d+\\s+.+$"
 
     # 2.二级标题（如"1.1  数据来源与组成"）
     # 格式：数字.数字 + 空格 + 标题内容，完全匹配整行
     - class: heading-2
       match:
-        type: paragraph
         pattern: "^\\d+\\.\\d+\\s+.+$"
 
     # 3.三级标题（如"1.1.1  详细内容"）
     # 格式：数字.数字.数字 + 空格 + 标题内容，完全匹配整行
     - class: heading-3
       match:
-        type: paragraph
         pattern: "^\\d+\\.\\d+\\.\\d+\\s+.+$"
 
     # 4.图片题注（以"图"开头，后跟编号）
@@ -30,7 +27,6 @@ document:
     # 注意：正则表达式允许"图"和数字之间有可选的空格，完全匹配整行
     - class: figure-caption
       match:
-        type: paragraph
         pattern: "^图\\s*\\d+.*$"
 
     # 5.表格题注（以"表"开头，后跟编号）
@@ -38,5 +34,4 @@ document:
     # 注意：正则表达式允许"表"和数字之间有可选的空格，完全匹配整行
     - class: table-caption
       match:
-        type: paragraph
         pattern: "^表\\s*\\d+.*$"

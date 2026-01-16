@@ -380,19 +380,12 @@ class Classifier:
             if isinstance(position_config, dict) and "type" in position_config:
                 pos_type = position_config["type"]
                 
-                if pos_type == "relative":
-                    pos_index = position_config["index"]
-                    
-                    # 如果是区间表达式，提取其中的 class 引用
-                    if isinstance(pos_index, str) and any(c in pos_index for c in '()[]'):
-                        # 解析区间表达式：(a, b) 或 [a, b]
-                        # 注意：类名可以包含连字符，如 abstract-en
-                        import re
-                        pattern = r'[\[\(]\s*([\w-]+)\s*,\s*([\w-]+)\s*[\]\)]'
-                        match = re.search(pattern, pos_index)
-                        if match:
-                            anchor1, anchor2 = match.groups()
-                            dependencies.extend([anchor1, anchor2])
+                # 新语法：position: {type: between, class: [a, b]}
+                if pos_type == "between":
+                    if "class" in position_config:
+                        classes = position_config["class"]
+                        if isinstance(classes, list):
+                            dependencies.extend(classes)
                 
                 # 新语法：position: {type: next/prev, class: xxx}
                 elif pos_type in ["next", "prev"]:
@@ -576,9 +569,9 @@ class Classifier:
         """
         matchers = []
 
-        # 类型匹配
-        if "type" in config:
-            matchers.append(TypeMatcher(config["type"]))
+        # 类型匹配（默认为 paragraph）
+        element_type = config.get("type", "paragraph")
+        matchers.append(TypeMatcher(element_type))
 
         # 相对位置匹配（相对于父区域）
         if "position" in config:
@@ -667,9 +660,9 @@ class Classifier:
         """
         matchers = []
 
-        # 类型匹配
-        if "type" in config:
-            matchers.append(TypeMatcher(config["type"]))
+        # 类型匹配（默认为 paragraph）
+        element_type = config.get("type", "paragraph")
+        matchers.append(TypeMatcher(element_type))
 
         # 新的统一 position 语法
         if "position" in config:
@@ -685,16 +678,19 @@ class Classifier:
                     matchers.append(PositionMatcher(pos_index))
                 
                 elif pos_type == "relative":
-                    # 相对定位：可能是区间表达式或简单位置
-                    pos_index = position_config["index"]
-                    if isinstance(pos_index, str) and any(c in pos_index for c in '()[]'):
-                        # 区间表达式：(a, b) 或 [a, b] 等
-                        range_matchers = self._parse_range_expression(pos_index)
-                        matchers.extend(range_matchers)
-                    else:
-                        # 简单位置：first, last, middle, 0, 1, 2...
-                        # 这个会在 _build_matchers_for_children 中处理
-                        pass
+                    # 相对定位：简单位置（用于 children 中）
+                    # 简单位置：0, 1, 2, -1...
+                    # 这个会在 _build_matchers_for_children 中处理
+                    pass
+                
+                elif pos_type == "between":
+                    # 区间定位：position: {type: between, class: [a, b]}
+                    classes = position_config["class"]
+                    if isinstance(classes, list) and len(classes) == 2:
+                        # 创建 RangeMatcher
+                        after_anchor = {"class": classes[0]}
+                        before_anchor = {"class": classes[1]}
+                        matchers.append(RangeMatcher(after_anchor, before_anchor))
                 
                 elif pos_type == "next":
                     # 下一个元素：position: {type: next, class: xxx}

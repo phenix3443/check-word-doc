@@ -13,8 +13,9 @@ document:
       first_line_indent: 2字符
 
   # 各元素样式定义
+  # 注意：顺序与 classifiers.yaml 保持一致，便于对比
   styles:
-    # 论文标题
+    # 1. 论文标题
     # 要求：居中，中文黑体，西文Times New Roman，3号，段前、段后各0.5行距
     .title:
       font:
@@ -26,12 +27,12 @@ document:
         space_before: 0.5行
         space_after: 0.5行
 
-    # 作者区域（整体样式，可选）
+    # 2. 作者区域（整体样式，可选）
     .author-section:
       paragraph:
         alignment: 居中
 
-    # 作者列表
+    # 3. 作者列表
     # 注意：作者名后的数字和星号应为上标格式（如：王嘉平1*，汪浩2）
     # 第一作者的数字后必须有星号
     # 当前系统只检查段落级别样式，不检查 run 级别的上标格式
@@ -43,42 +44,35 @@ document:
       paragraph:
         alignment: 居中
 
-    # 作者单位
+    # 4. 作者单位
     .author-affiliation:
       font:
         size: 五号
       paragraph:
         alignment: 居中
 
-    # 通信作者
+    # 5. 通信作者
     .corresponding-author:
       font:
         size: 五号
       paragraph:
         alignment: 居中
 
-    # 中文摘要（完整段落，以"摘要："开头）
+    # 6. 中文摘要（完整段落，以"摘要："开头）
     # 注意：段落内"摘要："三字为黑体加粗，但我们只检查段落级别格式
     .abstract:
       paragraph:
         line_spacing: 1.15倍
         alignment: 两端对齐
 
-    # 关键词（完整段落，以"关键词："开头）
+    # 7. 关键词（完整段落，以"关键词："开头）
     # 注意：段落内"关键词："三字为黑体加粗，但我们只检查段落级别格式
     .keywords:
       paragraph:
         line_spacing: 1.15倍
         alignment: 两端对齐
 
-    # 英文关键词（完整段落，以"Keywords:"开头）
-    # 注意：段落内"Keywords:"为黑体加粗，但我们只检查段落级别格式
-    .keywords-en:
-      paragraph:
-        line_spacing: 1.15倍
-        alignment: 两端对齐
-
-    # 英文标题
+    # 8. 英文标题
     .title-en:
       font:
         name_ascii: "Times New Roman"
@@ -88,7 +82,12 @@ document:
         space_before: 0.5行
         space_after: 0.5行
 
-    # 英文作者列表
+    # 9. 英文作者区域（整体样式，可选）
+    .author-section-en:
+      paragraph:
+        alignment: 居中
+
+    # 10. 英文作者列表
     .author-list-en:
       font:
         name_ascii: "Times New Roman"
@@ -96,7 +95,7 @@ document:
       paragraph:
         alignment: 居中
 
-    # 英文作者单位
+    # 11. 英文作者单位
     .author-affiliation-en:
       font:
         name_ascii: "Times New Roman"
@@ -104,7 +103,7 @@ document:
       paragraph:
         alignment: 居中
 
-    # 英文通讯作者邮箱
+    # 12. 英文通讯作者邮箱
     .corresponding-author-en:
       font:
         name_ascii: "Times New Roman"
@@ -112,7 +111,7 @@ document:
       paragraph:
         alignment: 居中
 
-    # 英文摘要（完整段落，以"Abstract:"开头）
+    # 13. 英文摘要（完整段落，以"Abstract:"开头）
     .abstract-en:
       font:
         name_ascii: "Times New Roman"
@@ -121,7 +120,45 @@ document:
         line_spacing: 1.15倍
         alignment: 两端对齐
 
-    # 引言标题（特殊的一级标题，无编号）
+    # 14. 英文关键词（完整段落，以"Keywords:"开头）
+    # 注意：段落内"Keywords:"为黑体加粗，但我们只检查段落级别格式
+    .keywords-en:
+      paragraph:
+        line_spacing: 1.15倍
+        alignment: 两端对齐
+
+    # 15. 数据库（集）基本信息简介表题注
+    # 格式："表 1： 数据库（集）基本信息简介"
+    # 要求：表格序号与表格说明中间空1个字，表题段前、段后各0.5行距
+    # 宋体（英文Times New Roman），小5号，居中，标题和题头粗体，1.15倍行距
+    .data-info-table-caption:
+      font:
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
+        size: 小五
+        bold: true
+      paragraph:
+        alignment: 居中
+        line_spacing: 1.15倍
+        space_before: 0.5行
+        space_after: 0.5行
+
+    # 16. 数据库（集）基本信息简介表
+    # 位置：紧跟在表题注之后
+    # 格式要求：
+    # - 表格内容：宋体（中文）/Times New Roman（西文），小5号，1.15倍行距
+    # - 表头和题头：粗体
+    .data-info-table:
+      font:
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
+        size: 小五
+      paragraph:
+        line_spacing: 1.15倍
+        space_before: 0.5行
+        space_after: 0.5行
+
+    # 17. 引言标题（特殊的一级标题，无编号）
     # 内容："引  言" 或 "概  述"
     # 格式要求：与一级标题相同 - 宋体，西文字体Times New Roman，4号，段前、段后各0.5行距
     .heading-introduction:
@@ -134,7 +171,18 @@ document:
         space_before: 0.5行
         space_after: 0.5行
 
-    # 数据采集和处理方法（一级标题，编号为1）
+    # 18. 引言内容（正文段落）
+    .body-introduction:
+      font:
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
+        size: 五号
+      paragraph:
+        alignment: 两端对齐
+        first_line_indent: 2字符
+        line_spacing: 1.15倍
+
+    # 19. 数据采集和处理方法（一级标题，编号为1）
     # 格式要求：与一级标题相同 - 宋体，西文字体Times New Roman，4号，段前、段后各0.5行距
     .heading-data-collection:
       font:
@@ -146,7 +194,18 @@ document:
         space_before: 0.5行
         space_after: 0.5行
 
-    # 数据样本描述（一级标题，编号为2）
+    # 20. 数据采集和处理方法内容（正文段落）
+    .body-data-collection:
+      font:
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
+        size: 五号
+      paragraph:
+        alignment: 两端对齐
+        first_line_indent: 2字符
+        line_spacing: 1.15倍
+
+    # 21. 数据样本描述（一级标题，编号为2）
     # 格式要求：与一级标题相同
     .heading-data-description:
       font:
@@ -158,7 +217,18 @@ document:
         space_before: 0.5行
         space_after: 0.5行
 
-    # 数据质量控制和评估（一级标题，编号为3）
+    # 22. 数据样本描述内容（正文段落）
+    .body-data-description:
+      font:
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
+        size: 五号
+      paragraph:
+        alignment: 两端对齐
+        first_line_indent: 2字符
+        line_spacing: 1.15倍
+
+    # 23. 数据质量控制和评估（一级标题，编号为3）
     # 格式要求：与一级标题相同
     .heading-quality-control:
       font:
@@ -170,7 +240,18 @@ document:
         space_before: 0.5行
         space_after: 0.5行
 
-    # 数据价值和保藏计划（一级标题，编号为4）
+    # 24. 数据质量控制和评估内容（正文段落）
+    .body-quality-control:
+      font:
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
+        size: 五号
+      paragraph:
+        alignment: 两端对齐
+        first_line_indent: 2字符
+        line_spacing: 1.15倍
+
+    # 25. 数据价值和保藏计划（一级标题，编号为4）
     # 格式要求：与一级标题相同
     .heading-data-value:
       font:
@@ -182,7 +263,18 @@ document:
         space_before: 0.5行
         space_after: 0.5行
 
-    # 数据使用方法和建议（一级标题，编号为5）
+    # 26. 数据价值和保藏计划内容（正文段落）
+    .body-data-value:
+      font:
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
+        size: 五号
+      paragraph:
+        alignment: 两端对齐
+        first_line_indent: 2字符
+        line_spacing: 1.15倍
+
+    # 27. 数据使用方法和建议（一级标题，编号为5）
     # 格式要求：与一级标题相同
     .heading-usage-method:
       font:
@@ -194,7 +286,18 @@ document:
         space_before: 0.5行
         space_after: 0.5行
 
-    # 数据可用性声明（一级标题，编号为6）
+    # 28. 数据使用方法和建议内容（正文段落）
+    .body-usage-method:
+      font:
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
+        size: 五号
+      paragraph:
+        alignment: 两端对齐
+        first_line_indent: 2字符
+        line_spacing: 1.15倍
+
+    # 29. 数据可用性声明（一级标题，编号为6）
     # 格式要求：与一级标题相同
     .heading-availability:
       font:
@@ -206,7 +309,18 @@ document:
         space_before: 0.5行
         space_after: 0.5行
 
-    # 致谢标题（特殊的一级标题，无编号）
+    # 30. 数据可用性声明内容（正文段落）
+    .body-availability:
+      font:
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
+        size: 五号
+      paragraph:
+        alignment: 两端对齐
+        first_line_indent: 2字符
+        line_spacing: 1.15倍
+
+    # 31. 致谢标题（特殊的一级标题，无编号）
     # 内容："致  谢"
     # 格式要求：与一级标题相同 - 宋体，西文字体Times New Roman，4号，段前、段后各0.5行距
     .heading-acknowledgments:
@@ -219,7 +333,18 @@ document:
         space_before: 0.5行
         space_after: 0.5行
 
-    # 数据作者分工职责标题（特殊的一级标题，无编号）
+    # 32. 致谢内容（正文段落）
+    .body-acknowledgments:
+      font:
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
+        size: 五号
+      paragraph:
+        alignment: 两端对齐
+        first_line_indent: 2字符
+        line_spacing: 1.15倍
+
+    # 33. 数据作者分工职责标题（特殊的一级标题，无编号）
     # 内容："数据作者分工职责"
     # 格式要求：与一级标题相同 - 宋体，西文字体Times New Roman，4号，段前、段后各0.5行距
     .heading-author-contributions:
@@ -232,7 +357,18 @@ document:
         space_before: 0.5行
         space_after: 0.5行
 
-    # 参考文献标题（特殊的一级标题，固定内容）
+    # 34. 数据作者分工职责内容（正文段落）
+    .body-author-contributions:
+      font:
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
+        size: 五号
+      paragraph:
+        alignment: 两端对齐
+        first_line_indent: 2字符
+        line_spacing: 1.15倍
+
+    # 35. 参考文献标题（特殊的一级标题，固定内容）
     # 内容："参考文献"
     # 格式要求：与一级标题相同 - 宋体，西文字体Times New Roman，4号，段前、段后各0.5行距
     .heading-references:
@@ -244,3 +380,16 @@ document:
         alignment: 左对齐
         space_before: 0.5行
         space_after: 0.5行
+
+    # 36. 参考文献列表（文献条目）
+    # 格式：以 [数字] 开头的文献条目
+    # 要求：宋体/Times New Roman，5号，两端对齐，悬挂缩进（首行不缩进，后续行缩进），1.15倍行距
+    .reference-item:
+      font:
+        name_eastasia: 宋体
+        name_ascii: "Times New Roman"
+        size: 五号
+      paragraph:
+        alignment: 两端对齐
+        line_spacing: 1.15倍
+        # 注意：参考文献通常使用悬挂缩进，但这里先使用默认格式

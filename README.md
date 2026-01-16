@@ -6,6 +6,7 @@ Word 文档格式检查工具 - 基于语义分类和样式检查的文档规范
 
 - ✅ **语义分类**：通过 Classifier 系统为文档元素添加语义标签（class）
 - ✅ **样式检查**：基于 class 的样式检查，类似 CSS 的设计理念
+- ✅ **CSS 选择器**：使用类似 CSS 的选择器语法查询和筛选文档元素 ✨ 新功能
 - ✅ **灵活定位**：支持绝对定位、相对定位、区间定位等多种元素定位方式
 - ✅ **自动单元转换**：支持 `三号`、`0.5行`、`2字符` 等人类可读单位
 - ✅ **配置驱动**：通过 YAML 配置文件定义文档规范，无需修改代码
@@ -49,25 +50,86 @@ poetry run docx-lint document.docx --config config/template/data_paper/config.ya
    - 通过位置、内容模式等规则识别元素
    - 支持复合区域（children）和嵌套结构
 
-2. **StyleChecker（样式检查）**：检查每个 class 的样式是否符合要求
+2. **Selector（元素选择）**：使用 CSS 风格的选择器查询元素 ✨ 新增
+   - 类似 CSS 选择器语法（`.class`、`:nth()`、`+` 等）
+   - 快速定位和提取文档中的特定元素
+   - 支持伪类、相邻兄弟选择器等高级功能
+
+3. **StyleChecker（样式检查）**：检查每个 class 的样式是否符合要求
    - 类似 CSS 样式定义
    - 为每个 class 定义期望的字体、段落格式等
    - 比较实际样式与期望样式，生成 Issue
 
-3. **Walker（文档遍历）**：按顺序遍历文档元素
+4. **Walker（文档遍历）**：按顺序遍历文档元素
    - 将文档解析为 Block 序列（ParagraphBlock、TableBlock）
    - 保持文档原始顺序
 
 ### 工作流程
 
 ```
-文档 → Walker → Blocks → Classifier → Blocks with Classes → StyleChecker → Issues
+文档 → Walker → Blocks → Classifier → Blocks with Classes → Selector/StyleChecker → Query Results/Issues
 ```
 
 1. **文档解析**：Walker 将文档解析为 Block 序列
 2. **语义标注**：Classifier 为每个 Block 添加 class 标签
-3. **样式检查**：StyleChecker 检查每个 class 的样式是否符合要求
-4. **生成报告**：输出检查结果（Issues）
+3. **元素查询**：Selector 使用选择器语法查询特定元素（可选）
+4. **样式检查**：StyleChecker 检查每个 class 的样式是否符合要求
+5. **生成报告**：输出检查结果（Issues）
+
+## Selector 使用示例 ✨ 新功能
+
+使用类似 CSS 的选择器语法查询和筛选已标记的文档元素：
+
+### 基本用法
+
+```python
+from script.core.selector import Selector
+
+# 创建选择器（blocks 是已经被 Classifier 标记的元素列表）
+selector = Selector(blocks)
+
+# 查询第二个作者的地址
+affiliation = selector.select_one(".author-affiliation:nth(1)")
+print(f"第二个作者地址: {affiliation.paragraph.text}")
+
+# 查询参考文献的第二条
+ref = selector.select_one(".reference-item:nth(1)")
+print(f"第二条参考文献: {ref.paragraph.text}")
+
+# 查询所有参考文献
+refs = selector.select(".reference-item")
+print(f"参考文献共 {len(refs)} 条")
+
+# 查询引言标题后的第一段正文
+intro = selector.select_one(".heading-introduction + .body-introduction")
+print(f"引言第一段: {intro.paragraph.text}")
+```
+
+### 支持的选择器
+
+- **类选择器**：`.author-list`、`.reference-item`
+- **伪类选择器**：`:first`、`:last`、`:nth(n)`
+- **相邻兄弟选择器**：`.keywords-en + .data-info-table-caption`
+- **属性选择器**：`[type="table"]`
+
+### 实用方法
+
+```python
+# 检查元素是否存在
+if selector.exists(".abstract-en"):
+    print("文档包含英文摘要")
+
+# 统计元素数量
+ref_count = selector.count(".reference-item")
+print(f"参考文献数量: {ref_count}")
+
+# 选择第一个匹配的元素
+first_ref = selector.select_one(".reference-item:first")
+```
+
+详细文档请参考：
+- [Selector 语法规范](doc/SELECTOR.md)
+- [Selector 使用示例](doc/SELECTOR_EXAMPLES.md)
 
 ## 配置示例
 
@@ -109,24 +171,24 @@ document:
 # 简单定位：论文标题（第一段）
 - class: title
   match:
-    type: paragraph
+    # type: paragraph  # 默认值，可省略
     position:
       type: absolute
       index: 0
 
-# 模式匹配：摘要（以"摘要："开头）
+# 模式匹配：摘要（识别元素身份）
 - class: abstract
   match:
-    type: paragraph
-    pattern: "^摘要："
+    # type: paragraph  # 默认值，可省略
+    pattern: "^摘要："  # 识别型 pattern：用于识别元素身份
 
-# 相对定位：作者区域（标题和摘要之间）
+# 区间定位：作者区域（标题和摘要之间）
 - class: author-section
   match:
     type: paragraph
     position:
-      type: relative
-      index: (title, abstract)  # 开区间
+      type: between
+      class: [title, abstract]
   # 复合区域：子元素
   children:
     - class: author-list
@@ -165,6 +227,30 @@ document:
     line_spacing: 1.5倍
 ```
 
+## Pattern 使用原则
+
+### 识别型 vs 验证型
+
+**识别型 pattern**（放在 `classifiers.yaml`）：
+- ✅ 用于识别元素的身份特征
+- ✅ 例如：`^摘要：`、`^Abstract:`、`^图\s*\d+`
+
+**验证型 pattern**（放在 `rules.yaml`）：
+- ❌ 用于验证内容格式是否正确
+- ❌ 例如：`^.*[,，、].*$`（检查是否包含分隔符）
+
+```yaml
+# ✅ 正确：识别型 pattern（classifiers.yaml）
+- class: abstract
+  match:
+    pattern: "^摘要：.*$"  # 识别：以"摘要："开头的是摘要
+
+# ❌ 错误：验证型 pattern（应该放在 rules.yaml）
+- class: author-list
+  match:
+    pattern: "^.*[,，、].*$"  # 验证：检查格式是否正确
+```
+
 ## 支持的定位方式
 
 ### 1. 绝对定位 (Absolute)
@@ -178,15 +264,14 @@ position:
   index: -1     # 最后一个元素
 ```
 
-### 2. 相对定位（区间）
+### 2. 区间定位 (Between)
 
-两个锚点之间的区域：
+两个元素之间的区域：
 
 ```yaml
 position:
-  type: relative
-  index: (title, abstract)    # 开区间：不包含 title 和 abstract
-  index: [title, abstract)    # 左闭右开：包含 title，不包含 abstract
+  type: between
+  class: [title, abstract]  # 标题和摘要之间（不包含端点）
 ```
 
 ### 3. 相对定位（父区域内）

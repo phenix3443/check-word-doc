@@ -62,7 +62,7 @@ classifiers:
   # 绝对定位：文档第一段
   - class: title
     match:
-      type: paragraph
+      # type: paragraph  # 默认值，可省略
       position:
         type: absolute
         index: 0
@@ -70,16 +70,16 @@ classifiers:
   # 模式匹配：以"摘要："开头
   - class: abstract
     match:
-      type: paragraph
+      # type: paragraph  # 默认值，可省略
       pattern: "^摘要：.*$"
 
-  # 相对定位：标题和摘要之间
+  # 区间定位：标题和摘要之间
   - class: author-section
     match:
-      type: paragraph
+      # type: paragraph  # 默认值，可省略
       position:
-        type: relative
-        index: (title, abstract)
+        type: between
+        class: [title, abstract]
 
 # 配置：样式定义
 styles:
@@ -120,7 +120,7 @@ styles:
    └── 支持多种匹配方式：
        ├── position 定位（通过 position 字段）
        │   ├── absolute: 绝对位置（index: 0, -1）
-       │   ├── relative: 区间定位（index: (a, b)）
+       │   ├── between: 区间定位（class: [a, b]）
        │   ├── next: 下一个元素（class: xxx）
        │   └── prev: 上一个元素（class: xxx）
        ├── pattern: 内容模式匹配
@@ -214,11 +214,13 @@ class Classifier:
     def _match(self, block: Block, rule: dict, context: List[Block]) -> bool:
         """判断元素是否匹配规则"""
         # 支持多种匹配方式
+        # - type: 元素类型（默认 paragraph）
         # - position: {type: absolute} - 绝对位置
         # - position: {type: relative} - 相对位置/区间
         # - position: {type: next} - 紧跟定位
         # - position: {type: prev} - 之前定位
-        # - pattern: 内容模式
+        # - position: {type: between} - 区间定位
+        # - pattern: 识别型内容模式（用于识别元素身份，不用于验证格式）
         pass
 ```
 
@@ -279,6 +281,29 @@ class TableBlock(Block):
 
 ## 匹配规则详解
 
+### 元素类型（type）
+
+**默认值**：`paragraph`
+
+所有匹配规则默认匹配段落元素。如果需要匹配表格，需要显式指定：
+
+```yaml
+# 默认匹配段落（可省略 type）
+- class: title
+  match:
+    position:
+      type: absolute
+      index: 0
+
+# 显式指定匹配表格
+- class: data-table
+  match:
+    type: table
+    position:
+      type: absolute
+      index: 5
+```
+
 ### 1. 绝对位置匹配
 
 ```yaml
@@ -292,11 +317,36 @@ class TableBlock(Block):
 
 ### 2. 内容模式匹配
 
+**用途**：用于**识别元素身份**的特征模式
+
 ```yaml
 - class: abstract
   match:
-    type: paragraph
-    pattern: "^摘要：.*$"  # 以"摘要："开头（完全匹配）
+    # type: paragraph  # 默认值，可省略
+    pattern: "^摘要：.*$"  # 识别：以"摘要："开头的是摘要
+
+- class: keywords
+  match:
+    pattern: "^关键词：.*$"  # 识别：以"关键词："开头的是关键词
+```
+
+**重要原则**：
+
+- ✅ **识别型 pattern**：用于识别元素的身份特征（如 `^摘要：`、`^Abstract:`）
+- ❌ **验证型 pattern**：用于验证内容格式的 pattern 应该放在 `rules.yaml` 中
+
+**示例对比**：
+
+```yaml
+# ✅ 正确：识别型 pattern（放在 classifiers.yaml）
+- class: abstract
+  match:
+    pattern: "^摘要：.*$"  # 识别元素身份
+
+# ❌ 错误：验证型 pattern（应该放在 rules.yaml）
+- class: author-list
+  match:
+    pattern: "^.*[,，、].*$"  # 验证内容格式
 ```
 
 ### 3. 紧跟定位匹配
@@ -317,8 +367,8 @@ class TableBlock(Block):
   match:
     type: paragraph
     position:
-      type: relative
-      index: (title, abstract)  # 标题和摘要之间（开区间）
+      type: between
+      class: [title, abstract]  # 标题和摘要之间
 ```
 
 ### 5. 复合区域匹配 (children) ⭐
@@ -331,8 +381,8 @@ class TableBlock(Block):
   match:
     type: paragraph
     position:
-      type: relative
-      index: (title, abstract)  # 标题和摘要之间
+      type: between
+      class: [title, abstract]  # 标题和摘要之间
 
   # 子元素：使用相对定位（相对于父区域）
   children:
@@ -348,8 +398,8 @@ class TableBlock(Block):
     - class: author-affiliation
       match:
         position:
-          type: relative
-          index: (author-list, corresponding-author)  # 区间定位
+          type: between
+          class: [author-list, corresponding-author]  # 区间定位
         pattern: "^\\d+\\."
 
     # 最后：通信作者
@@ -365,7 +415,7 @@ class TableBlock(Block):
 
 - `0` - 父区域的第一个元素
 - `-1` - 父区域的最后一个元素
-- `(class1, class2)` - 父区域内两个元素之间的区间
+- `between` + `class: [class1, class2]` - 父区域内两个元素之间的区间
 
 **优势：**
 
