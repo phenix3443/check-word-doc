@@ -59,6 +59,7 @@
 ```yaml
 # 配置：语义识别规则
 classifiers:
+  # 绝对定位：文档第一段
   - class: title
     match:
       type: paragraph
@@ -66,13 +67,19 @@ classifiers:
         type: absolute
         index: 0
 
-  - class: author-list
+  # 模式匹配：以"摘要："开头
+  - class: abstract
+    match:
+      type: paragraph
+      pattern: "^摘要：.*$"
+
+  # 相对定位：标题和摘要之间
+  - class: author-section
     match:
       type: paragraph
       position:
-        type: absolute
-        index: 1
-      pattern: ".*[,，].*"
+        type: relative
+        index: (title, abstract)
 
 # 配置：样式定义
 styles:
@@ -83,7 +90,7 @@ styles:
     paragraph:
       alignment: 居中
 
-  .author-list:
+  .author-section:
     font:
       name_eastasia: 楷体
       size: 小四
