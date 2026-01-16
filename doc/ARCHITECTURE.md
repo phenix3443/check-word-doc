@@ -105,7 +105,9 @@ styles:
 ```
 1. 加载配置
    ├── classifiers（元素识别规则）
-   └── styles（样式定义）
+   ├── styles（样式定义）
+   ├── rules（内容规则检查）
+   └── defaults（全局默认样式）
 
 2. 遍历文档（Walker）
    └── 顺序访问所有段落和表格
@@ -129,7 +131,13 @@ styles:
    ├── 检查元素的实际格式
    └── 生成 Issue 报告
 
-5. 输出报告
+5. 内容规则检查（RuleChecker）
+   ├── 遍历所有带 class 的元素
+   ├── 应用对应的内容规则
+   ├── 检查逻辑条件、内容格式等
+   └── 生成 Issue 报告
+
+6. 输出报告
    └── Markdown 或 JSON 格式
 ```
 
@@ -405,7 +413,7 @@ styles:
 
 ## 配置文件结构
 
-完整的配置文件包含三部分：
+完整的配置文件包含四部分：
 
 ```yaml
 document:
@@ -424,7 +432,14 @@ document:
     .abstract:
       font: {...}
 
-  # 3. 全局默认样式（可选）
+  # 3. 内容规则检查（可选）
+  rules:
+    - id: author-superscript-check
+      class: author-list
+      conditions: {...}
+      message: "..."
+
+  # 4. 全局默认样式（可选）
   defaults:
     font:
       size: 小四
