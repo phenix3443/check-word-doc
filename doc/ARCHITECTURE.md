@@ -105,10 +105,11 @@ styles:
    ├── 根据 classifiers 规则匹配元素
    ├── 给匹配的元素添加 class 属性
    └── 支持多种匹配方式：
-       ├── 绝对位置（position）
+       ├── 绝对定位（position: {type: absolute}）
+       ├── 相对定位/区间（position: {type: relative}）
+       ├── 紧跟定位（position: {type: after}）
+       ├── 之前定位（position: {type: before}）
        ├── 内容模式（pattern）
-       ├── 相对位置（after/before）
-       ├── 范围定位（range）
        └── class 引用（引用其他已识别的元素）
 
 4. 样式检查（StyleChecker）
@@ -139,7 +140,7 @@ Classifier 会自动分析依赖并按正确顺序处理：
 
 2. **依赖提取**
    - 提取每条规则的依赖（通过 `_extract_dependencies`）
-   - 分析 `after`、`before`、`range` 中的 `class` 引用
+   - 分析 `position` 中的 `class` 引用（`type: after/before/relative`）
 
 3. **递归处理**
    - 递归处理依赖规则（通过 `_process_rule_with_dependencies`）
@@ -151,9 +152,10 @@ Classifier 会自动分析依赖并按正确顺序处理：
 # author-section 引用了 title 和 abstract
 - class: author-section
   match:
-    range:
-      after: { class: title }      # 依赖 title
-      before: { class: abstract }  # 依赖 abstract
+    type: paragraph
+    position:
+      type: relative
+      index: (title, abstract)  # 依赖 title 和 abstract
 ```
 
 处理顺序：`title` → `abstract` → `author-section` ✅
@@ -164,11 +166,15 @@ Classifier 会自动分析依赖并按正确顺序处理：
 # ❌ 错误：A 依赖 B，B 依赖 A
 - class: section-a
   match:
-    after: { class: section-b }
+    position:
+      type: after
+      class: section-b
 
 - class: section-b
   match:
-    after: { class: section-a }
+    position:
+      type: after
+      class: section-a
 ```
 
 错误信息：`检测到循环依赖: section-a -> section-b -> section-a`
@@ -188,10 +194,11 @@ class Classifier:
     def _match(self, block: Block, rule: dict, context: List[Block]) -> bool:
         """判断元素是否匹配规则"""
         # 支持多种匹配方式
-        # - position: 绝对位置
+        # - position: {type: absolute} - 绝对位置
+        # - position: {type: relative} - 相对位置/区间
+        # - position: {type: after} - 紧跟定位
+        # - position: {type: before} - 之前定位
         # - pattern: 内容模式
-        # - range: 范围定位
-        # - after/before: 相对位置
         pass
 ```
 
@@ -258,7 +265,9 @@ class TableBlock(Block):
 - class: title
   match:
     type: paragraph
-    position: 0  # 文档第一个段落
+    position:
+      type: absolute
+      index: 0  # 文档第一个段落
 ```
 
 ### 2. 内容模式匹配
@@ -267,29 +276,29 @@ class TableBlock(Block):
 - class: abstract
   match:
     type: paragraph
-    pattern: "^摘要[:：]"  # 以"摘要："开头
+    pattern: "^摘要：.*$"  # 以"摘要："开头（完全匹配）
 ```
 
-### 3. 相对位置匹配
+### 3. 紧跟定位匹配
 
 ```yaml
-- class: author-list
+- class: title-en
   match:
     type: paragraph
-    after: {class: title}  # 在 title 之后
-    offset: 0  # 紧接着
+    position:
+      type: after
+      class: keywords  # 紧跟在 keywords 之后
 ```
 
-### 4. 范围匹配
+### 4. 区间定位匹配
 
 ```yaml
-- class: author-affiliation
+- class: author-section
   match:
     type: paragraph
-    range:
-      after: {class: author-list}
-      before: {class: abstract}
-    pattern: "^\\d+\\."  # 范围内，且以数字开头
+    position:
+      type: relative
+      index: (title, abstract)  # 标题和摘要之间（开区间）
 ```
 
 ### 5. 复合区域匹配 (children) ⭐
@@ -301,36 +310,42 @@ class TableBlock(Block):
 - class: author-section
   match:
     type: paragraph
-    range:
-      after: {class: title}
-      before: {pattern: "^摘要："}
+    position:
+      type: relative
+      index: (title, abstract)  # 标题和摘要之间
 
-  # 子元素：使用相对定位
+  # 子元素：使用相对定位（相对于父区域）
   children:
     # 第一个：作者列表
     - class: author-list
       match:
-        position: first
+        position:
+          type: relative
+          index: 0  # 父区域的第一个
         pattern: ".*[,，].*"
 
     # 中间：作者单位（可变数量）
     - class: author-affiliation
       match:
-        position: middle
+        position:
+          type: relative
+          index: (author-list, corresponding-author)  # 区间定位
         pattern: "^\\d+\\."
 
     # 最后：通信作者
     - class: corresponding-author
       match:
-        position: last
+        position:
+          type: relative
+          index: -1  # 父区域的最后一个
         pattern: "^\\*"
 ```
 
-**相对位置关键字：**
+**相对位置索引：**
 
-- `first` - 父区域的第一个元素
-- `last` - 父区域的最后一个元素
-- `middle` - 父区域的中间元素（不包括首尾）
+- `0` - 父区域的第一个元素
+- `-1` - 父区域的最后一个元素
+- `(class1, class2)` - 父区域内两个元素之间的区间
 
 **优势：**
 
@@ -432,11 +447,11 @@ poetry run docx-lint document.docx --config config.yaml --verbose
 
 # 输出：
 # [Classifier] Checking block 0
-#   - Rule 'title' (position: 0): ✓ MATCH
+#   - Rule 'title' (position: {type: absolute, index: 0}): ✓ MATCH
 #   - Added class: title
 # [Classifier] Checking block 1
-#   - Rule 'author-list' (after: title, pattern: ".*[,，].*"): ✓ MATCH
-#   - Added class: author-list
+#   - Rule 'title-en' (position: {type: after, class: keywords}): ✓ MATCH
+#   - Added class: title-en
 ```
 
 ## 优势
@@ -462,11 +477,17 @@ classifiers:
 
   # 特定分类
   - class: title
-    match: {position: 0}
+    match:
+      position:
+        type: absolute
+        index: 0
 
   # 特殊标记
   - class: important
-    match: {position: 0}
+    match:
+      position:
+        type: absolute
+        index: 0
 
 # 结果：第一段会有 class="paragraph title important"
 ```
