@@ -62,12 +62,16 @@ classifiers:
   - class: title
     match:
       type: paragraph
-      position: 0
+      position:
+        type: absolute
+        index: 0
 
   - class: author-list
     match:
       type: paragraph
-      position: 1
+      position:
+        type: absolute
+        index: 1
       pattern: ".*[,，].*"
 
 # 配置：样式定义
