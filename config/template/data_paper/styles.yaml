@@ -71,13 +71,6 @@ document:
         line_spacing: 1.15倍
         alignment: 两端对齐
 
-    # 英文摘要（完整段落，以"Abstract:"开头）
-    # 注意：段落内"Abstract:"为黑体加粗，但我们只检查段落级别格式
-    .abstract-en:
-      paragraph:
-        line_spacing: 1.15倍
-        alignment: 两端对齐
-
     # 英文关键词（完整段落，以"Keywords:"开头）
     # 注意：段落内"Keywords:"为黑体加粗，但我们只检查段落级别格式
     .keywords-en:
