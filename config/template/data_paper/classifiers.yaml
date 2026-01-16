@@ -199,10 +199,10 @@ document:
 
     # 16. 参考文献标题（特殊的一级标题，固定内容为"参考文献"）
     # 位置：紧跟在数据作者分工职责之后，文档末尾（最后一个一级标题）
-    # 格式："参考文献"或"参考文献："（前面没有空格）
+    # 格式："参考文献"（前面没有空格，完全匹配）
     - class: heading-references
       match:
         type: paragraph
-        pattern: "^参考文献：?$"
+        pattern: "^参考文献$"
         after:
           class: heading-author-contributions
