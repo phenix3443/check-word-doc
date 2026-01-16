@@ -57,7 +57,203 @@ document:
       severity: warning
       message: 数字和中文单位之间不应该有空格
 
+    # ========== 连续标点规则 ==========
+
+    # r-basic-014: 不应有连续的逗号
+    - id: r-basic-014
+      name: 不应有连续的逗号
+      description: 不应该出现连续的逗号
+      selector: "paragraph"
+      check:
+        pattern: "^(?!.*[,，]{2,}).*$"
+      severity: error
+      message: 不应该出现连续的逗号
+
+    # r-basic-015: 不应有连续的中文句号
+    - id: r-basic-015
+      name: 不应有连续的中文句号
+      description: 不应该出现连续的中文句号
+      selector: "paragraph"
+      check:
+        pattern: "^(?!.*[。]{2,}).*$"
+      severity: error
+      message: 不应该出现连续的中文句号
+
+    # r-basic-016: 不应有连续的空格
+    - id: r-basic-016
+      name: 不应有连续的空格
+      description: 不应该出现连续的空格
+      selector: "paragraph"
+      check:
+        pattern: "^(?!.*\\s{2,}).*$"
+      severity: warning
+      message: 不应该出现连续的空格
+
+    # ========== 中英文混排规则 ==========
+
+    # r-basic-017: 中文和英文之间应该有空格
+    - id: r-basic-017
+      name: 中文和英文之间应该有空格
+      description: 中文和英文字母之间应该有一个空格
+      selector: "paragraph"
+      check:
+        pattern: "^(?!.*[\\u4e00-\\u9fa5][a-zA-Z])(?!.*[a-zA-Z][\\u4e00-\\u9fa5]).*$"
+      severity: info
+      message: 中文和英文之间建议有一个空格
+
+    # r-basic-018: 中文和数字之间应该有空格
+    - id: r-basic-018
+      name: 中文和数字之间应该有空格
+      description: 中文和数字之间应该有一个空格（数字+单位除外）
+      selector: "paragraph"
+      check:
+        pattern: "^(?!.*[\\u4e00-\\u9fa5]\\d)(?!.*\\d[\\u4e00-\\u9fa5]).*$"
+      severity: info
+      message: 中文和数字之间建议有一个空格（数字+单位除外）
+
+    # ========== 标点符号使用规则 ==========
+
+    # r-basic-019: 不应使用英文标点代替中文标点
+    - id: r-basic-019
+      name: 中文句子应使用中文标点
+      description: 中文句子中应使用中文标点符号
+      selector: "paragraph"
+      check:
+        pattern: "^(?!.*[\\u4e00-\\u9fa5]+[,;:!?][\\u4e00-\\u9fa5]).*$"
+      severity: warning
+      message: 中文句子中应使用中文标点符号，不应使用英文标点
+
+    # r-basic-020: 省略号应该是六个点
+    - id: r-basic-020
+      name: 省略号格式
+      description: 省略号应该使用六个点（……）或两个三点（...）
+      selector: "paragraph"
+      check:
+        pattern: "^(?!.*[^.]\\.\\.(?!\\.)(?![。])).*$"
+      severity: warning
+      message: 省略号应该使用六个点（……）或三个点（...）
+
+    # r-basic-021: 破折号应该是两个连字符
+    - id: r-basic-021
+      name: 破折号格式
+      description: 破折号应该使用——而不是单个-
+      selector: "paragraph"
+      check:
+        pattern: "^(?!.*[\\u4e00-\\u9fa5]-[\\u4e00-\\u9fa5]).*$"
+      severity: info
+      message: 破折号应该使用——而不是单个-
+
+    # ========== 数字和单位规则 ==========
+
+    # r-basic-022: 数字和英文单位之间应该有空格
+    - id: r-basic-022
+      name: 数字和英文单位之间应该有空格
+      description: 数字和英文单位（如KB、MB、GB等）之间应该有空格
+      selector: "paragraph"
+      check:
+        pattern: "^(?!.*\\d+[A-Z]{1,3}(?![a-z])).*$"
+      severity: info
+      message: 数字和英文单位之间建议有空格（如100 KB）
+
+    # r-basic-023: 百分号前不应有空格
+    - id: r-basic-023
+      name: 百分号前不应有空格
+      description: 数字和百分号之间不应该有空格
+      selector: "paragraph"
+      check:
+        pattern: "^(?!.*\\d+\\s+%).*$"
+      severity: warning
+      message: 数字和百分号之间不应该有空格
+
+    # ========== 特殊字符规则 ==========
+
+    # r-basic-024: 不应有全角字母
+    - id: r-basic-024
+      name: 不应使用全角字母
+      description: 不应该使用全角字母，应使用半角字母
+      selector: "paragraph"
+      check:
+        pattern: "^(?!.*[ａ-ｚＡ-Ｚ]).*$"
+      severity: error
+      message: 不应该使用全角字母，应使用半角字母
+
+    # r-basic-025: 不应有全角数字
+    - id: r-basic-025
+      name: 不应使用全角数字
+      description: 不应该使用全角数字，应使用半角数字
+      selector: "paragraph"
+      check:
+        pattern: "^(?!.*[０-９]).*$"
+      severity: error
+      message: 不应该使用全角数字，应使用半角数字
+
+    # r-basic-026: 不应混用中英文标点
+    - id: r-basic-026
+      name: 不应混用中英文标点
+      description: 同一句子中不应混用中英文标点
+      selector: "paragraph"
+      check:
+        pattern: "^(?!.*[，。；：！？].*[,\\.;:!?])(?!.*[,\\.;:!?].*[，。；：！？]).*$"
+      severity: warning
+      message: 同一句子中不应混用中英文标点
+
+    # ========== 行尾和行首规则 ==========
+
+    # r-basic-027: 行首不应有标点符号
+    - id: r-basic-027
+      name: 行首不应有标点符号
+      description: 段落开头不应该是标点符号
+      selector: "paragraph"
+      check:
+        pattern: "^(?![，。；：！？、,\\.;:!?]).*$"
+      severity: error
+      message: 段落开头不应该是标点符号
+
+    # r-basic-028: 行尾不应有多余空格
+    - id: r-basic-028
+      name: 行尾不应有空格
+      description: 段落结尾不应该有空格
+      selector: "paragraph"
+      check:
+        pattern: "^.*[^\\s]$"
+      severity: warning
+      message: 段落结尾不应该有空格
+
+    # r-basic-029: 行首不应有空格
+    - id: r-basic-029
+      name: 行首不应有多余空格
+      description: 段落开头不应该有多余空格（首行缩进除外）
+      selector: "paragraph"
+      check:
+        pattern: "^(?!\\s{3,}).*$"
+      severity: warning
+      message: 段落开头不应该有多余空格
+
+    # ========== 特殊格式规则 ==========
+
+    # r-basic-030: URL格式检查
+    - id: r-basic-030
+      name: URL格式检查
+      description: URL应该是有效的格式
+      selector: "paragraph"
+      check:
+        pattern: "^(?!.*https?://[^\\s]*\\s[^\\s]).*$"
+      severity: info
+      message: URL中不应该有空格
+
+    # r-basic-031: 邮箱格式基本检查
+    - id: r-basic-031
+      name: 邮箱格式基本检查
+      description: 邮箱地址应该包含@符号
+      selector: "paragraph"
+      check:
+        pattern: "^(?!.*[a-zA-Z0-9][\\u4e00-\\u9fa5]+@).*$"
+      severity: warning
+      message: 邮箱地址格式可能不正确
+
 # 注意：
 # 1. 引号匹配规则由于涉及复杂的嵌套和特殊字符，建议在代码中实现
 # 2. 括号匹配规则同样建议在代码中实现
-# 3. 本配置文件只包含可以用简单正则表达式实现的基本规则
+# 3. 某些规则（如r-basic-017、r-basic-018）标记为info级别，因为在某些情况下可能不适用
+# 4. 本配置文件包含可以用正则表达式实现的基本规则
+# 5. 复杂的语义规则（如引号嵌套、括号匹配等）建议在代码层面实现
