@@ -3,29 +3,31 @@
 document:
   rules:
     # ========== 作者信息规则 ==========
-    
-    # r-001: 作者列表分隔符规则
+
+    # r-001: 作者列表格式规则（多作者）
     - id: r-001
-      name: 作者列表分隔符规则
-      description: 多个作者时，作者之间必须使用中文逗号（，）分隔
+      name: 作者列表格式规则（多作者）
+      description: 多个作者时，必须使用中文逗号分隔，每个作者名后必须有数字编号
       selector: ".author-list"
+      condition:
+        # 条件：包含中文逗号（说明有多个作者）
+        selector: ".author-list"
+        pattern: "，"
       check:
-        pattern: "^[^,;；、]+\\d+[*]?(，[^,;；、]+\\d+[*]?)*$"
+        # 格式：作者名+数字[+星号]，作者名+数字[+星号]，...
+        # 详细说明：
+        # - [^,;；、，]+ : 作者名（不能包含任何分隔符，包括中文逗号）
+        # - \\d+ : 数字编号（必须有）
+        # - [*]? : 星号（可选，表示通讯作者）
+        # - ， : 中文逗号（分隔符）
+        # - (，[^,;；、，]+\\d+[*]?)* : 后续作者（重复模式）
+        # 注意：作者名中不能包含逗号，确保每个作者都有数字编号
+        pattern: "^[^,;；、，]+\\d+[*]?(，[^,;；、，]+\\d+[*]?)*$"
       severity: error
-      message: "多个作者之间必须使用中文逗号（，）分隔，不能使用英文逗号或其他分隔符"
-    
-    # r-002: 作者编号规则
+      message: "多个作者时，必须使用中文逗号（，）分隔，每个作者名后必须有数字编号（如：王嘉平1*，汪浩2）"
+
+    # r-002: 通讯作者标记规则
     - id: r-002
-      name: 作者编号规则
-      description: 每个作者后面必须有数字编号（表示单位）
-      selector: ".author-list"
-      check:
-        pattern: "\\d+"
-      severity: error
-      message: "每个作者后面必须有数字编号（表示作者单位）"
-    
-    # r-003: 通讯作者标记规则
-    - id: r-003
       name: 通讯作者标记规则
       description: 通讯作者的编号后必须有星号
       selector: ".author-list"
@@ -33,151 +35,277 @@ document:
         pattern: "\\d+\\*"
       severity: error
       message: "通讯作者的编号后必须有星号（如：王嘉平1*）"
-    
-    # r-004: 通信作者信息标记
-    - id: r-004
-      name: 通信作者信息标记
-      description: 通信作者信息必须以星号开头
+
+    # r-003: 通信作者格式检查
+    - id: r-003
+      name: 通信作者格式检查
+      description: 通信作者格式必须为"* 论文通信作者：作者名（邮箱）"
       selector: ".corresponding-author"
       check:
-        pattern: "^\\*"
+        # 格式：* 论文通信作者：作者名（邮箱）
+        # 详细说明：
+        # - ^\\* : 以星号开头
+        # - \\s* : 可选的空格
+        # - 论文通信作者[：:] : "论文通信作者"后跟中文或英文冒号
+        # - .+ : 作者名（至少一个字符）
+        # - （ : 左括号（中文）
+        # - [^）]+ : 邮箱（不包含右括号的字符）
+        # - ） : 右括号（中文）
+        # - $ : 字符串结束
+        pattern: "^\\*\\s*论文通信作者[：:].+（[^）]+）$"
       severity: error
-      message: "通信作者信息必须以星号开头"
-    
-    # r-005: 第一个作者单位编号
-    - id: r-005
-      name: 第一个作者单位编号
-      description: 第一个作者单位必须以 '1.' 开头
-      selector: ".author-affiliation:first"
-      check:
-        pattern: "^1\\."
-      severity: error
-      message: "第一个作者单位必须以 '1.' 开头"
-    
-    # r-006: 第二个作者单位编号（如果存在）
-    - id: r-006
-      name: 第二个作者单位编号
-      description: 第二个作者单位必须以 '2.' 开头
-      selector: ".author-affiliation:nth(1)"
+      message: "通信作者格式错误，应为：* 论文通信作者：作者名（邮箱）"
+
+    # r-004: 作者列表星号检查（如果有通讯作者）
+    - id: r-004
+      name: 作者列表星号检查
+      description: 如果有通讯作者，作者列表中必须有星号标记
+      selector: ".author-list"
       condition:
-        selector: ".author-affiliation"
-        count: ">= 2"
+        # 条件：存在通讯作者信息
+        selector: ".corresponding-author"
+        exists: true
       check:
-        pattern: "^2\\."
+        # 检查：作者列表中必须包含星号
+        # 格式：数字+星号 或 直接星号
+        pattern: "\\d*\\*"
       severity: error
-      message: "第二个作者单位必须以 '2.' 开头"
-    
-    # r-007: 作者单位格式（多作者）
+      message: "作者列表中必须有星号标记通讯作者"
+
+    # r-007: 作者单位格式
     - id: r-007
-      name: 作者单位格式（多作者）
-      description: 多个作者时，单位格式必须为"编号. 单位/机构，城市  邮编"
+      name: 作者单位格式
+      description: 作者单位格式必须为"单位/机构，城市  邮编"
       selector: ".author-affiliation"
-      condition:
-        selector: ".author-list"
-        pattern: ".*[,，、].*"
       check:
-        pattern: "^\\d+\\.\\s+.+，.+\\s{2,}\\d{6}$"
+        pattern: "^.+/.+，[^\\s]+\\s{2}\\d{6}$"
       severity: error
-      message: "作者单位格式错误，应为：编号. 单位/机构，城市  邮编（注意：城市和邮编之间有两个空格）"
-    
-    # r-008: 作者单位格式（单作者）
-    - id: r-008
-      name: 作者单位格式（单作者）
-      description: 单个作者时，单位格式必须为"单位/机构，城市  邮编"（无编号）
-      selector: ".author-affiliation"
-      condition:
-        selector: ".author-list"
-        pattern: "^[^,，、]+$"
-      check:
-        pattern: "^[^\\d].+，.+\\s{2,}\\d{6}$"
-      severity: error
-      message: "作者单位格式错误，应为：单位/机构，城市  邮编（注意：城市和邮编之间有两个空格，无需编号）"
-    
-    # ========== 英文作者信息规则 ==========
-    
-    # r-009: 英文作者列表分隔符
+      message: "作者单位格式错误，应为：单位/机构，城市  邮编（注意：单位和机构之间用/分隔，城市和邮编之间有恰好两个空格）"
+
+    # r-009: 作者单位数量检查（使用跨元素数量比较）
     - id: r-009
-      name: 英文作者列表分隔符规则
-      description: 多个英文作者时，作者之间必须使用英文逗号+空格(, )分隔
+      name: 作者单位数量检查
+      description: 作者单位数量必须与作者列表中的最大编号一致
+      selector: ".author-affiliation"
+      check:
+        count_equals:
+          selector: ".author-list"
+          extract: "\\d+" # 提取所有数字编号
+          method: "max" # 取最大值作为期望的单位数量
+      severity: error
+      message: "作者单位数量与作者编号数量不一致"
+
+    # ========== 英文作者信息规则 ==========
+
+    # r-010: 英文作者列表格式规则（多作者）
+    - id: r-010
+      name: 英文作者列表格式规则（多作者）
+      description: 多个英文作者时，必须使用英文逗号+空格分隔，每个作者名后可以有数字编号
       selector: ".author-list-en"
       condition:
+        # 条件：包含英文逗号（说明有多个作者）
         selector: ".author-list-en"
         pattern: ","
       check:
-        pattern: "^[^,，；;]+,\\s+[^,，；;]+"
+        # 格式：作者名[+数字][+星号], 作者名[+数字][+星号], ...
+        # 详细说明：
+        # - [^,，；;]+ : 作者名（不能包含分隔符）
+        # - \\d* : 数字编号（可选）
+        # - [*]? : 星号（可选，表示通讯作者）
+        # - ,\\s+ : 英文逗号+空格（分隔符）
+        # - (,\\s+[^,，；;]+\\d*[*]?)* : 后续作者（重复模式）
+        # 注意：英文作者名后的数字是可选的，但如果有数字，格式必须正确
+        pattern: "^[^,，；;]+\\d*[*]?(,\\s+[^,，；;]+\\d*[*]?)*$"
       severity: error
-      message: "多个英文作者之间必须使用英文逗号+空格(, )分隔"
-    
-    # r-010: 英文作者名格式
-    - id: r-010
-      name: 英文作者名格式
-      description: 英文作者名必须包含大写字母
+      message: "多个英文作者时，必须使用英文逗号+空格(, )分隔（如：WANG Jiaping1*, WANG Hao2）"
+
+    # r-011: 英文作者列表格式规则（单作者）
+    - id: r-011
+      name: 英文作者列表格式规则（单作者）
+      description: 单个英文作者时，作者名后可以有数字编号
+      selector: ".author-list-en"
+      condition:
+        # 条件：不包含英文逗号（说明只有一个作者）
+        selector: ".author-list-en"
+        pattern: "^[^,]*$"
+      check:
+        # 格式：作者名[+数字][+星号]
+        pattern: "^[^,，；;]+\\d*[*]?$"
+      severity: error
+      message: "英文作者名格式错误（如：WANG Jiaping1*）"
+
+    # r-012: 英文通讯作者标记规则
+    - id: r-012
+      name: 英文通讯作者标记规则
+      description: 英文通讯作者的编号后必须有星号
       selector: ".author-list-en"
       check:
-        pattern: "[A-Z]"
+        pattern: "\\d+\\*"
       severity: error
-      message: "英文作者名必须包含大写字母"
-    
-    # r-011: 英文作者单位编号（多作者）
-    - id: r-011
-      name: 英文作者单位编号（多作者）
-      description: 多个作者时，英文作者单位必须以数字编号开头
-      selector: ".author-affiliation-en"
-      condition:
-        selector: ".author-list-en"
-        pattern: ".*,.*"
-      check:
-        pattern: "^\\d+\\."
-      severity: error
-      message: "多个作者时，英文作者单位必须以数字编号开头（如：1. Affiliation）"
-    
-    # r-012: 英文通讯作者邮箱格式
-    - id: r-012
-      name: 英文通讯作者邮箱格式
-      description: 英文通讯作者信息必须以"*Email:"开头
+      message: "英文通讯作者的编号后必须有星号（如：WANG Jiaping1*）"
+
+    # r-014: 英文通讯作者格式检查
+    - id: r-014
+      name: 英文通讯作者格式检查
+      description: "英文通讯作者必须符合'*Email: author@mail.cn'格式"
       selector: ".corresponding-author-en"
       check:
-        pattern: "^\\*Email:"
+        # 格式：*Email: 有效邮箱地址
+        # 邮箱格式：用户名@域名.后缀
+        pattern: "^\\*Email:\\s+[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
       severity: error
-      message: "英文通讯作者信息必须以'*Email:'开头"
-    
-    # ========== 参考文献规则 ==========
-    
-    # r-020: 第一条参考文献编号
+      message: "英文通讯作者必须符合格式'*Email: author@mail.cn'（注意Email后有冒号和空格，邮箱地址必须有效）"
+
+    # ========== 摘要和关键词规则 ==========
+
+    # r-015: 摘要长度检查
+    - id: r-015
+      name: 摘要长度检查
+      description: 摘要限长500字
+      selector: ".abstract"
+      check:
+        # 检查字数（不包括"摘要："三个字）
+        # 使用自定义检查，暂时用 pattern 检查是否存在内容
+        length:
+          max: 500
+          exclude: "^摘要[：:]\\s*" # 排除开头的"摘要："
+      severity: warning
+      message: "摘要应限制在500字以内"
+
+    # r-016: 摘要无引用检查
+    - id: r-016
+      name: 摘要无引用检查
+      description: 摘要中不应包含引用标记
+      selector: ".abstract"
+      check:
+        # 检查是否包含引用标记 [1], [2] 等
+        pattern: "^(?!.*\\[\\d+\\]).*$"
+      severity: error
+      message: "摘要中不应包含引用标记（如 [1], [2]）"
+
+    # r-017: 摘要格式检查
+    - id: r-017
+      name: 摘要格式检查
+      description: 摘要必须以"摘要："开头
+      selector: ".abstract"
+      check:
+        pattern: "^摘要[：:]"
+      severity: error
+      message: "摘要必须以'摘要：'开头"
+
+    # r-018: 关键词数量检查
+    - id: r-018
+      name: 关键词数量检查
+      description: 关键词不低于3个
+      selector: ".keywords"
+      check:
+        # 检查关键词数量（通过分号分隔统计）
+        # 排除开头的"关键词："，然后按分号分割
+        count:
+          min: 3
+          separator: "；"
+          exclude: "^关键词[：:]\\s*"
+      severity: error
+      message: "关键词不能少于3个"
+
+    # r-019: 关键词分隔符检查
+    - id: r-019
+      name: 关键词分隔符检查
+      description: 关键词之间必须使用中文分号分隔
+      selector: ".keywords"
+      check:
+        # 检查是否使用了中文分号
+        # 如果有多个关键词，必须包含分号
+        pattern: "^关键词[：:].+；.+$"
+      severity: warning
+      message: "多个关键词之间应使用中文分号（；）分隔"
+
+    # r-020: 关键词格式检查
     - id: r-020
+      name: 关键词格式检查
+      description: 关键词必须以"关键词："开头
+      selector: ".keywords"
+      check:
+        pattern: "^关键词[：:]"
+      severity: error
+      message: "关键词必须以'关键词：'开头"
+
+    # r-021: 英文关键词数量检查
+    - id: r-021
+      name: 英文关键词数量检查
+      description: 英文关键词不低于3个
+      selector: ".keywords-en"
+      check:
+        # 检查关键词数量（通过英文分号+空格分隔统计）
+        # 排除开头的"Keywords:"，然后按"; "分割
+        count:
+          min: 3
+          separator: "; "
+          exclude: "^Keywords:\\s*"
+      severity: error
+      message: "英文关键词不能少于3个"
+
+    # r-022: 英文关键词分隔符检查
+    - id: r-022
+      name: 英文关键词分隔符检查
+      description: 英文关键词之间必须使用英文分号+空格分隔
+      selector: ".keywords-en"
+      check:
+        # 检查是否使用了英文分号+空格
+        # 如果有多个关键词，必须包含"; "
+        pattern: "^Keywords:.+;\\s+.+$"
+      severity: warning
+      message: "多个英文关键词之间应使用英文分号+空格（; ）分隔"
+
+    # r-023: 英文关键词格式检查
+    - id: r-023
+      name: 英文关键词格式检查
+      description: 英文关键词必须以"Keywords:"开头
+      selector: ".keywords-en"
+      check:
+        pattern: "^Keywords:"
+      severity: error
+      message: "英文关键词必须以'Keywords:'开头"
+
+    # ========== 参考文献规则 ==========
+
+    # r-024: 参考文献格式
+    - id: r-024
+      name: 参考文献格式
+      description: 参考文献必须按照"[数字]  内容"格式，序号后空2格
+      selector: ".reference-item"
+      check:
+        # 格式：[数字] + 恰好2个空格 + 内容
+        # 使用 [^ ] 确保第3个字符不是空格
+        pattern: "^\\[\\d+\\]  [^ ].*$"
+      severity: error
+      message: "参考文献格式错误，应为：[数字]  内容（注意：序号后恰好2个空格）"
+
+    # r-025: 第一条参考文献编号
+    - id: r-025
       name: 第一条参考文献编号
       description: 第一条参考文献必须以 '[1]' 开头
       selector: ".reference-item:first"
       check:
-        pattern: "^\\[1\\]"
+        pattern: "^\\[1\\]  "
       severity: error
       message: "第一条参考文献必须以 '[1]' 开头"
-    
-    # r-021: 第二条参考文献编号
-    - id: r-021
-      name: 第二条参考文献编号
-      description: 第二条参考文献必须以 '[2]' 开头
+
+    # r-026: 参考文献编号连续性
+    - id: r-026
+      name: 参考文献编号连续性
+      description: 参考文献编号应该连续（如果有第2条，应该是[2]）
       selector: ".reference-item:nth(1)"
       condition:
         selector: ".reference-item"
         count: ">= 2"
       check:
-        pattern: "^\\[2\\]"
+        pattern: "^\\[2\\]  "
       severity: error
-      message: "第二条参考文献必须以 '[2]' 开头"
-    
-    # r-022: 最后一条参考文献编号
-    - id: r-022
-      name: 最后一条参考文献编号
-      description: 最后一条参考文献编号应该与总数一致
-      selector: ".reference-item:last"
-      check:
-        pattern: "^\\[\\d+\\]"
-      severity: warning
-      message: "参考文献编号应该连续"
-    
+      message: "第二条参考文献必须以 '[2]' 开头，编号应该连续"
+
     # ========== 章节规则 ==========
-    
+
     # r-030: 引言内容存在性
     - id: r-030
       name: 引言内容检查
@@ -187,7 +315,7 @@ document:
         exists: true
       severity: error
       message: "引言标题后必须有引言内容"
-    
+
     # r-031: 数据采集内容存在性
     - id: r-031
       name: 数据采集内容检查
@@ -197,7 +325,7 @@ document:
         exists: true
       severity: error
       message: "数据采集和处理方法标题后必须有内容"
-    
+
     # r-032: 数据样本描述内容存在性
     - id: r-032
       name: 数据样本描述内容检查
@@ -207,19 +335,23 @@ document:
         exists: true
       severity: error
       message: "数据样本描述标题后必须有内容"
-    
+
     # ========== 表格规则 ==========
-    
+
     # r-040: 数据信息表题注格式
     - id: r-040
       name: 数据信息表题注格式
       description: 数据信息表题注必须为"表 1： 数据库（集）基本信息简介"
       selector: ".data-info-table-caption"
       check:
-        pattern: "^表\\s*1[：:]\\s*数据库（集）基本信息简介$"
+        # 格式：表 1： 数据库（集）基本信息简介
+        # 表和数字之间可以有空格
+        # 冒号可以是中文或英文
+        # 冒号后可以有空格
+        pattern: "^表\\s*1\\s*[：:]\\s*数据库（集）基本信息简介$"
       severity: error
-      message: "数据信息表题注格式错误，应为：表 1： 数据库（集）基本信息简介"
-    
+      message: "数据信息表题注格式错误，应为'表 1： 数据库（集）基本信息简介'（注意空格和标点）"
+
     # r-041: 数据信息表存在性
     - id: r-041
       name: 数据信息表存在性
@@ -229,9 +361,79 @@ document:
         exists: true
       severity: error
       message: "数据信息表题注后必须有表格"
-    
+
+    # r-042: 数据库名称与论文标题一致性检查
+    - id: r-042
+      name: 数据库名称与论文标题一致性
+      description: 数据信息表中的"数据库（集）名称"必须与论文标题一致
+      selector: ".data-info-table"
+      check:
+        # 表格结构：第一列是key，第二列是value
+        # 查找第一列为"数据库（集）名称"的行，获取该行第二列的值
+        # 将该值与论文标题比较
+        cross_validate:
+          source_selector: ".title"
+          target_key_column: 0 # key列（第一列）
+          target_value_column: 1 # value列（第二列）
+          target_key: "数据库（集）名称" # 要查找的key
+          match_type: "exact" # 精确匹配（trim后比较）
+      severity: error
+      message: "数据信息表中的'数据库（集）名称'必须与论文标题一致"
+
+    # r-043: 数据作者分隔符检查
+    - id: r-043
+      name: 数据作者分隔符检查
+      description: 数据信息表中"数据作者"字段的多个作者必须使用中文顿号分隔
+      selector: ".data-info-table"
+      check:
+        # 表格结构：第一列是key，第二列是value
+        # 查找第一列为"数据作者"的行，检查该行第二列的值
+        # 如果包含多个作者，必须使用中文顿号（、）分隔
+        table_cell_pattern:
+          target_key_column: 0 # key列（第一列）
+          target_value_column: 1 # value列（第二列）
+          target_key: "数据作者" # 要查找的key
+          pattern: "^[^,，;；、]+([、][^,，;；、]+)*$" # 使用中文顿号分隔，不允许其他分隔符
+      severity: error
+      message: "数据信息表中'数据作者'字段的多个作者必须使用中文顿号（、）分隔"
+
+    # r-044: 数据量格式检查
+    - id: r-044
+      name: 数据量格式检查
+      description: 数据信息表中"数据量"字段必须是文件大小格式
+      selector: ".data-info-table"
+      check:
+        # 表格结构：第一列是key，第二列是value
+        # 查找第一列为"数据量"的行，检查该行第二列的值
+        # 必须是文件大小格式：数字+单位（KB、MB、GB、TB等）
+        table_cell_pattern:
+          target_key_column: 0 # key列（第一列）
+          target_value_column: 1 # value列（第二列）
+          target_key: "数据量" # 要查找的key
+          pattern: "^\\d+(\\.\\d+)?\\s*(B|KB|MB|GB|TB|PB|EB)$" # 文件大小格式
+      severity: error
+      message: "数据信息表中'数据量'字段必须是文件大小格式（如：100KB、10MB、1.5GB）"
+
+    # r-045: 数据格式检查
+    - id: r-045
+      name: 数据格式检查
+      description: 数据信息表中"数据格式"字段必须是文件后缀名格式
+      selector: ".data-info-table"
+      check:
+        # 表格结构：第一列是key，第二列是value
+        # 查找第一列为"数据格式"的行，检查该行第二列的值
+        # 必须是文件后缀名格式：以点开头 + 字母数字
+        # 支持多个后缀名，使用顿号、逗号或分号分隔
+        table_cell_pattern:
+          target_key_column: 0 # key列（第一列）
+          target_value_column: 1 # value列（第二列）
+          target_key: "数据格式" # 要查找的key
+          pattern: "^\\.[a-zA-Z0-9]+(\\s*[、，,;；]\\s*\\.[a-zA-Z0-9]+)*$" # 文件后缀名格式
+      severity: error
+      message: "数据信息表中'数据格式'字段必须是文件后缀名格式（如：.txt、.csv、.json）"
+
     # ========== 必需元素检查 ==========
-    
+
     # r-050: 论文标题存在性
     - id: r-050
       name: 论文标题存在性
@@ -240,7 +442,7 @@ document:
         exists: true
       severity: error
       message: "文档必须包含论文标题"
-    
+
     # r-051: 中文摘要存在性
     - id: r-051
       name: 中文摘要存在性
@@ -249,7 +451,7 @@ document:
         exists: true
       severity: error
       message: "文档必须包含中文摘要"
-    
+
     # r-052: 英文摘要存在性
     - id: r-052
       name: 英文摘要存在性
@@ -258,7 +460,7 @@ document:
         exists: true
       severity: error
       message: "文档必须包含英文摘要"
-    
+
     # r-053: 关键词存在性
     - id: r-053
       name: 关键词存在性
@@ -267,7 +469,7 @@ document:
         exists: true
       severity: error
       message: "文档必须包含关键词"
-    
+
     # r-054: 参考文献存在性
     - id: r-054
       name: 参考文献存在性
@@ -276,7 +478,7 @@ document:
         exists: true
       severity: error
       message: "文档必须包含参考文献"
-    
+
     # r-055: 参考文献数量
     - id: r-055
       name: 参考文献数量
